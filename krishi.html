@@ -1,0 +1,1123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Krishi-Mitra AI Advisory</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f7f9fc; }
+
+        
+        .chat-container { overflow-y: auto; scrollbar-width: thin; scrollbar-color: #888 #f1f1f1; }
+        .chat-container::-webkit-scrollbar { width: 8px; }
+        .chat-container::-webkit-scrollbar-track { background: #f1f1f1; }
+        .chat-container::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
+        .chat-container::-webkit-scrollbar-thumb:hover { background: #555; }
+
+        
+        .message-bubble {
+            border-radius: 1rem;
+            max-width: 80%;
+            padding: 0.75rem 1rem;
+            margin-bottom: 1rem;
+            word-wrap: break-word;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        
+        .user-message {
+            background-color: #4CAF50;
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 0.25rem;
+            background-image: linear-gradient(135deg, #4CAF50, #66BB6A);
+        }
+
+      
+        .ai-message { background-color: #E3F2FD; color: #333; align-self: flex-start; border-bottom-left-radius: 0.25rem; display: flex; align-items: center; background-image: linear-gradient(135deg, #E3F2FD, #BBDEFB); }
+        .ai-message p { flex-grow: 1; margin: 0; }
+        
+        
+        .ai-message ul { padding-left: 20px; margin-top: 5px; margin-bottom: 5px; }
+        .ai-message li { margin-bottom: 5px; }
+
+
+       
+        .message-timestamp { font-size: 0.65rem; color: rgba(255,255,255,0.7); margin-top: 0.25rem; align-self: flex-end; }
+        .ai-message .message-timestamp { color: rgba(51, 51, 51, 0.6); align-self: flex-start; }
+        .btn-primary { background-color: #3B82F6; color: white; border: none; cursor: pointer; transition: background-color 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .btn-primary:hover { background-color: #2563EB; }
+
+        
+        .loading-dots { display:flex; align-items:center; }
+        .loading-dots .dot { width: 8px; height:8px; margin:0 2px; background-color:#333; border-radius:50%; animation: bounce 1.4s infinite ease-in-out both; }
+        .loading-dots .dot:nth-child(1) { animation-delay: -0.32s; }
+        .loading-dots .dot:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes bounce { 0%,80%,100% { transform: scale(0); } 40% { transform: scale(1); } }
+
+        
+        .speak-btn {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            margin-left: 8px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 8px;
+            border-radius: 8px;
+            transition: background 0.15s;
+        }
+        .speak-btn:hover { background: rgba(0,0,0,0.05); }
+
+        /* Floating voice toggle */
+        .voice-toggle {
+            position: fixed;
+            right: 18px;
+            bottom: 18px;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: white;
+            padding: 8px 12px;
+            border-radius: 999px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+            border: 1px solid rgba(0,0,0,0.06);
+            user-select: none;
+        }
+        .voice-dot { width: 12px; height: 12px; border-radius: 50%; }
+        .voice-dot.on { background: #34D399; box-shadow: 0 0 6px rgba(52,211,153,0.3); }
+        .voice-dot.off { background: #F87171; box-shadow: 0 0 6px rgba(248,113,113,0.2); }
+
+      
+        @media (max-width: 900px) {
+            
+            .hidden-lg { display: none; }
+            .md\\:w-1\\/4 { width: 100% !important; }
+            .md\\:w-1\\/2 { width: 100% !important; }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex flex-col min-h-screen">
+    <style>
+        html, body { margin: 0; padding: 0; height: 100vh; width: 100%; }
+        body { background-size: cover; background-repeat: no-repeat; background-attachment: fixed; }
+    </style>
+
+    <body class="flex flex-col items-center justify-center min-h-screen bg-center relative" style="background-image: url('ab.jpg');">
+        <div class="absolute inset-0 bg-black bg-opacity-0"></div>
+
+        <header class="bg-gradient-to-r from-gray-800 to-gray-900 text-white p-4 shadow-lg">
+            <div class="container mx-auto flex justify-between items-center">
+                <h1 class="text-xl font-bold"><i class="fas fa-leaf text-green-300 mr-2"></i>Krishi-Mitra AI Advisory</h1>
+                <div class="flex items-center space-x-2 text-sm md:text-md">
+                    <i class="fas fa-user-circle text-lg text-green-300"></i>
+                    <span>Welcome,</span>
+                    <span id="username-display" class="font-semibold text-green-300"></span>
+                </div>
+            </div>
+        </header>
+
+        <div class="flex-grow flex items-center justify-center p-4 w-full">
+            <div class="bg-white rounded-3xl shadow-2xl p-6 md:p-8 w-11/12 max-w-7xl flex flex-col md:flex-row space-y-6 md:space-y-0 md:space-x-8 transform transition-all duration-500 max-h-[90vh] h-full overflow-auto md:overflow-hidden">
+
+                <div class="w-full md:w-1/4 p-4 bg-gradient-to-br from-blue-50 to-green-50 rounded-2xl flex flex-col justify-between shadow-inner flex-shrink-0">
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="flex items-center space-x-2">
+                                <i class="fas fa-leaf text-green-600 text-3xl"></i>
+                                <h1 class="text-3xl font-bold text-gray-800">Krishi-Mitra</h1>
+                            </div>
+                        </div>
+                        <p class="text-gray-600 text-sm mb-6">AI-Powered Farmer Advisory</p>
+                        <div class="grid grid-cols-2 gap-2 mb-6">
+                            <button id="lang-en" class="bg-gray-200 text-gray-800 text-sm px-3 py-1 rounded-full hover:bg-gray-300 transition-colors">English</button>
+                            <button id="lang-hi" class="bg-gray-200 text-gray-800 text-sm px-3 py-1 rounded-full hover:bg-gray-300 transition-colors">हिन्दी</button>
+                            <button id="lang-ta" class="bg-gray-200 text-gray-800 text-sm px-3 py-1 rounded-full hover:bg-gray-300 transition-colors">தமிழ்</button>
+                            <button id="lang-kn" class="bg-gray-200 text-gray-800 text-sm px-3 py-1 rounded-full hover:bg-gray-300 transition-colors">ಕನ್ನಡ</button>
+                            <button id="lang-ml" class="bg-gray-200 text-gray-800 text-sm px-3 py-1 rounded-full hover:bg-gray-300 transition-colors">മലയാളം</button>
+                        </div>
+                        <div class="mt-8 flex flex-col items-center justify-center space-y-4">
+                           <button id="dailyAdvisoryButton" class="btn-primary w-full p-3 rounded-xl shadow-lg">
+                                <i class="fas fa-sun mr-2"></i>✨ Daily Advisory
+                           </button>
+                           <button id="imageAnalysisButton" class="btn-primary w-full p-3 rounded-xl shadow-lg">
+                                <i class="fas fa-camera mr-2"></i>✨ Image Analysis
+                           </button>
+                           <button id="govtSchemesButton" class="btn-primary w-full p-3 rounded-xl shadow-lg">
+                                <i class="fas fa-hand-holding-usd mr-2"></i>✨ Govt Schemes
+                            </button>
+                            <button id="marketPriceButton" class="btn-primary w-full p-3 rounded-xl shadow-lg">
+                                <i class="fas fa-chart-line mr-2"></i>✨ Market Price
+                            </button>
+                            <button id="localNewsButton" class="btn-primary w-full p-3 rounded-xl shadow-lg bg-red-600 hover:bg-red-700">
+                                <i class="fas fa-newspaper mr-2"></i> Local News
+                            </button>
+                            <button id="officerDetailsButton" class="btn-primary w-full p-3 rounded-xl shadow-lg bg-yellow-500 hover:bg-yellow-600">
+                                <i class="fas fa-address-book mr-2"></i> Local Officer Details
+                            </button>
+                            </div>
+                    </div>
+
+                    <div class="space-y-4 mt-8">
+                        </div>
+                </div>
+
+                <div class="w-full md:w-1/2 flex flex-col p-4 bg-gray-50 rounded-2xl flex-grow min-h-[50vh] md:h-full md:min-h-0">
+                    <div id="chat-container" class="chat-container flex flex-col p-4 space-y-4 flex-grow">
+                        <div class="ai-message message-bubble self-start shadow-md">
+                            <p>Hello! I am Krishi-Mitra, your AI assistant. How can I help you with your farm today?</p>
+                            <span class="message-timestamp"></span>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center space-x-2 mt-4 flex-shrink-0">
+                        <input type="text" id="userInput" class="flex-grow p-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800" placeholder="Ask your question here...">
+                        <button id="micButton" class="btn-primary p-3 rounded-xl shadow-lg">
+                               <i class="fas fa-microphone"></i>
+                        </button>
+                        <button id="sendButton" class="btn-primary p-3 rounded-xl shadow-lg">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="hidden lg:flex lg:w-1/4 flex-col bg-gradient-to-br from-green-50 to-blue-50 rounded-2xl p-4 shadow-inner space-y-4 h-full flex-shrink-0">
+                    <h2 class="text-xl font-bold text-gray-800 flex items-center">
+                        <i class="fas fa-hand-holding-usd mr-2 text-green-600"></i> Govt Schemes
+                    </h2>
+                    <div class="bg-white rounded-xl shadow-md p-3 border-l-4 border-green-500 hover:shadow-lg transition">
+                        <h3 class="font-semibold text-gray-800 text-sm">PM Kisan Samman Nidhi</h3>
+                        <p class="text-xs text-gray-600">₹6000 annually to small & marginal farmers.</p>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-md p-3 border-l-4 border-blue-500 hover:shadow-lg transition">
+                        <h3 class="font-semibold text-gray-800 text-sm">Soil Health Card</h3>
+                        <p class="text-xs text-gray-600">Free soil testing & fertilizer advice.</p>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-md p-3 border-l-4 border-yellow-500 hover:shadow-lg transition">
+                        <h3 class="font-semibold text-gray-800 text-sm">Crop Insurance (PMFBY)</h3>
+                        <p class="text-xs text-gray-600">Protection from crop losses due to disasters.</p>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-md p-3 border-l-4 border-purple-500 hover:shadow-lg transition">
+                            <h3 class="font-semibold text-gray-800 text-sm">Kisan Credit Card</h3>
+                            <p class="text-xs text-gray-600">Low-interest loans for seeds, fertilizers & equipment.</p>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow-md p-3 border-l-4 border-red-500 hover:shadow-lg transition">
+                            <h3 class="font-semibold text-gray-800 text-sm">Pradhan Mantri Krishi Sinchai Yojana</h3>
+                            <p class="text-xs text-gray-600">Improved irrigation facilities to ensure water for all farms.</p>
+                    </div>
+
+                    <button id="moreSchemes" class="btn-primary w-full rounded-xl mt-2">
+                        <i class="fas fa-plus-circle mr-1"></i> View More
+                    </button>
+                </div>
+
+            </div>
+        </div>
+
+        <div id="imageModal" class="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center hidden">
+            <div class="bg-white p-6 rounded-xl shadow-xl w-11/12 max-w-md">
+                <h2 class="text-2xl font-bold mb-4 text-gray-800">Upload an Image</h2>
+                <p class="mb-4 text-gray-600">Please select an image of your crop to get an instant analysis for pests or diseases.</p>
+                <div class="flex flex-col items-center space-y-4">
+                    <input type="file" id="modalImageInput" accept="image/*" class="p-2 border border-gray-300 rounded-lg w-full">
+                    <button id="modalUploadButton" class="btn-primary w-full p-3 rounded-lg mt-2">Upload Image</button>
+                    <button id="modalCloseButton" class="w-full p-3 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 transition-colors">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="alertModal" class="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center hidden">
+            <div class="bg-white p-6 rounded-xl shadow-xl w-11/12 max-w-md text-center">
+                <h2 id="alertTitle" class="text-xl font-bold mb-4 text-gray-800"></h2>
+                <p id="alertMessage" class="mb-4 text-gray-600"></p>
+                <button id="alertCloseButton" class="btn-primary p-3 rounded-lg mt-2 w-full">OK</button>
+            </div>
+        </div>
+
+        <div id="voiceToggle" class="voice-toggle" title="Toggle voice on / off">
+            <div id="voiceDot" class="voice-dot on"></div>
+            <div id="voiceLabel" class="font-medium text-sm">Voice: ON</div>
+            <button id="voiceToggleBtn" class="btn-primary p-2 rounded-full" style="padding:6px 8px;">
+                <i id="voiceIcon" class="fas fa-volume-up"></i>
+            </button>
+        </div>
+
+    </body>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const sendButton = document.getElementById('sendButton');
+            const userInput = document.getElementById('userInput');
+            const chatContainer = document.getElementById('chat-container');
+            const dailyAdvisoryButton = document.getElementById('dailyAdvisoryButton');
+            const imageAnalysisButton = document.getElementById('imageAnalysisButton');
+            const govtSchemesButton = document.getElementById('govtSchemesButton');
+            const marketPriceButton = document.getElementById('marketPriceButton');
+            // NEW BUTTON REFERENCE ADDED
+            const officerDetailsButton = document.getElementById('officerDetailsButton');
+            // END NEW BUTTON REFERENCE
+            // NEW BUTTON REFERENCE FOR NEWS
+            const localNewsButton = document.getElementById('localNewsButton'); 
+            // END NEW BUTTON REFERENCE FOR NEWS
+            const micButton = document.getElementById('micButton');
+            const langButtons = {
+                en: document.getElementById('lang-en'),
+                hi: document.getElementById('lang-hi'),
+                ta: document.getElementById('lang-ta'),
+                kn: document.getElementById('lang-kn'),
+                ml: document.getElementById('lang-ml') // ADDED MALAYALAM BUTTON REFERENCE
+            };
+            const imageModal = document.getElementById('imageModal');
+            const modalImageInput = document.getElementById('modalImageInput');
+            const modalUploadButton = document.getElementById('modalUploadButton');
+            const modalCloseButton = document.getElementById('modalCloseButton');
+            const alertModal = document.getElementById('alertModal');
+            const alertTitle = document.getElementById('alertTitle');
+            const alertMessage = document.getElementById('alertMessage');
+            const alertCloseButton = document.getElementById('alertCloseButton');
+            const usernameDisplay = document.getElementById('username-display');
+
+            // Voice toggle elements
+            const voiceToggle = document.getElementById('voiceToggle');
+            const voiceToggleBtn = document.getElementById('voiceToggleBtn');
+            const voiceDot = document.getElementById('voiceDot');
+            const voiceLabel = document.getElementById('voiceLabel');
+            const voiceIcon = document.getElementById('voiceIcon');
+
+            // --- LOCATION STATE VARIABLE ---
+            // Default location will be used until geolocation is successful
+            let userLocation = 'Greater Noida, Uttar Pradesh, India';
+            // --- END LOCATION STATE VARIABLE ---
+
+
+            // --- Set Default Username ---
+            usernameDisplay.textContent = 'user';
+
+            // --- Language and UI State ---
+            // ************ MODIFIED: Set default language to Malayalam ('ml') ************
+            let currentLanguage = 'ml';
+            // ************ END MODIFIED ************
+
+            // --- Voice state (persisted) ---
+            let voiceEnabled = true;
+            try {
+                const saved = localStorage.getItem('krishi_voice_enabled');
+                if (saved !== null) voiceEnabled = saved === 'true';
+            } catch (e) { voiceEnabled = true; }
+
+            const updateVoiceUI = () => {
+                if (voiceEnabled) {
+                    voiceDot.classList.remove('off'); voiceDot.classList.add('on');
+                    voiceLabel.textContent = 'Voice: ON';
+                    voiceIcon.className = 'fas fa-volume-up';
+                } else {
+                    voiceDot.classList.remove('on'); voiceDot.classList.add('off');
+                    voiceLabel.textContent = 'Voice: OFF';
+                    voiceIcon.className = 'fas fa-volume-mute';
+                }
+            };
+            updateVoiceUI();
+
+            voiceToggleBtn.addEventListener('click', () => {
+                voiceEnabled = !voiceEnabled;
+                try { localStorage.setItem('krishi_voice_enabled', voiceEnabled); } catch (e) {}
+                updateVoiceUI();
+                // Stop any ongoing speech when turned off
+                if (!voiceEnabled && window.speechSynthesis) window.speechSynthesis.cancel();
+            });
+
+            // --- CONSTANTS ---
+            const GEMINI_API_KEY = "AIzaSyBBsLS23Efpu7wwi_Cks6vZT865_xm2nIc";
+            const CHAT_MODEL = "gemini-2.5-flash";
+
+            // ************ MODIFIED: Button Translation Object including 'localNews' ************
+            const buttonText = {
+                'en': {
+                    dailyAdvisory: '<i class="fas fa-sun mr-2"></i>✨ Daily Advisory',
+                    imageAnalysis: '<i class="fas fa-camera mr-2"></i>✨ Image Analysis',
+                    govtSchemes: '<i class="fas fa-hand-holding-usd mr-2"></i>✨ Govt Schemes',
+                    marketPrice: '<i class="fas fa-chart-line mr-2"></i>✨ Market Price',
+                    localNews: '<i class="fas fa-newspaper mr-2"></i> Local News', 
+                    officerDetails: '<i class="fas fa-address-book mr-2"></i> Local Officer Details'
+                },
+                'hi': {
+                    dailyAdvisory: '<i class="fas fa-sun mr-2"></i>✨ दैनिक सलाह',
+                    imageAnalysis: '<i class="fas fa-camera mr-2"></i>✨ छवि विश्लेषण',
+                    govtSchemes: '<i class="fas fa-hand-holding-usd mr-2"></i>✨ सरकारी योजनाएं',
+                    marketPrice: '<i class="fas fa-chart-line mr-2"></i>✨ बाजार मूल्य',
+                    localNews: '<i class="fas fa-newspaper mr-2"></i> स्थानीय समाचार', 
+                    officerDetails: '<i class="fas fa-address-book mr-2"></i> स्थानीय अधिकारी विवरण'
+                },
+                'ta': {
+                    dailyAdvisory: '<i class="fas fa-sun mr-2"></i>✨ தினசரி ஆலோசனை',
+                    imageAnalysis: '<i class="fas fa-camera mr-2"></i>✨ பட பகுப்பாய்வு',
+                    govtSchemes: '<i class="fas fa-hand-holding-usd mr-2"></i>✨ அரசு திட்டங்கள்',
+                    marketPrice: '<i class="fas fa-chart-line mr-2"></i>✨ சந்தை விலை',
+                    localNews: '<i class="fas fa-newspaper mr-2"></i> உள்ளூர் செய்தி', 
+                    officerDetails: '<i class="fas fa-address-book mr-2"></i> உள்ளூர் அதிகாரி விவரங்கள்'
+                },
+                'kn': {
+                    dailyAdvisory: '<i class="fas fa-sun mr-2"></i>✨ ದೈನಂದಿನ ಸಲಹೆ',
+                    imageAnalysis: '<i class="fas fa-camera mr-2"></i>✨ ಚಿತ್ರ ವಿಶ್ಲೇಷಣೆ',
+                    govtSchemes: '<i class="fas fa-hand-holding-usd mr-2"></i>✨ ಸರ್ಕಾರಿ ಯೋಜನೆಗಳು',
+                    marketPrice: '<i class="fas fa-chart-line mr-2"></i>✨ ಮಾರುಕಟ್ಟೆ ಬೆಲೆ',
+                    localNews: '<i class="fas fa-newspaper mr-2"></i> ಸ್ಥಳೀಯ ಸುದ್ದಿ', 
+                    officerDetails: '<i class="fas fa-address-book mr-2"></i> ಸ್ಥಳೀಯ ಅಧಿಕಾರಿ ವಿವರಗಳು'
+                },
+                'ml': {
+                    dailyAdvisory: '<i class="fas fa-sun mr-2"></i>✨ ദൈനംദിന ഉപദേശം',
+                    imageAnalysis: '<i class="fas fa-camera mr-2"></i>✨ ഇമേജ് വിശകലനം',
+                    govtSchemes: '<i class="fas fa-hand-holding-usd mr-2"></i>✨ സർക്കാർ പദ്ധതികൾ',
+                    marketPrice: '<i class="fas fa-chart-line mr-2"></i>✨ മാർക്കറ്റ് വില',
+                    localNews: '<i class="fas fa-newspaper mr-2"></i> പ്രാദേശിക വാർത്ത',
+                    officerDetails: '<i class="fas fa-address-book mr-2"></i> പ്രാദേശിക ഉദ്യോഗസ്ഥ വിവരങ്ങൾ'
+                }
+            };
+            // ************ END MODIFIED ************
+
+
+            const welcomeMessages = {
+                'en': 'Hello! I am Krishi-Mitra, your AI assistant. How can I help you with your farm today?',
+                'hi': 'नमस्ते! मैं कृषि-मित्र, आपका एआई सहायक हूँ। मैं आज आपके खेत में कैसे मदद कर सकता हूँ?',
+                'ta': 'வணக்கம்! நான் கிருஷி-மித்ரா, உங்கள் AI உதவியாளர். உங்கள் பண்ணைக்கு இன்று எப்படி உதவ முடியும்?',
+                'kn': 'ನಮಸ್ಕಾರ! ನಾನು ಕೃಷಿ-ಮಿತ್ರ, ನಿಮ್ಮ AI ಸಹಾಯಕ. ನಿಮ್ಮ ಕೃಷಿಗೆ ಇಂದು ಹೇಗೆ ಸಹಾಯ ಮಾಡಬಹುದು?',
+                'ml': 'നമസ്കാരം! ഞാൻ കൃഷി-മിത്ര, നിങ്ങളുടെ AI സഹായി. ഇന്ന് നിങ്ങളുടെ കൃഷിയിടത്തിൽ ഞാൻ എങ്ങനെ സഹായിക്കും?' // ADDED MALAYALAM
+            };
+            const placeholders = {
+                'en': 'Ask your question here...',
+                'hi': 'यहां अपना सवाल पूछें...',
+                'ta': 'இங்கே உங்கள் கேள்வியைக் கேளுங்கள்...',
+                'kn': 'ಇಲ್ಲಿ ನಿಮ್ಮ ಪ್ರಶ್ನೆಯನ್ನು ಕೇಳಿ...',
+                'ml': 'നിങ്ങളുടെ ചോദ്യം ഇവിടെ ചോദിക്കുക...' // ADDED MALAYALAM
+            };
+            const systemPrompts = {
+    'en': `
+You are **Krishi-Mitra**, an advanced agriculture expert AI for Indian farmers.
+Your answers must always be:
+
+✔ 100% accurate  
+✔ Based on ICAR guidelines, Krishi Vigyan Kendra (KVK) advisories, and standard agronomy  
+✔ Short, clear, and always in **bullet points** ✔ Tailored to Indian crops, climate, soil and farming practices  
+✔ Practical and farmer-friendly  
+✔ Focused ONLY on agriculture
+
+You MUST cover these topics very professionally when relevant:
+
+🌾 Crop Management  
+- Sowing time, spacing, seed rate  
+- Irrigation schedule  
+- Fertilizer schedule (NPK doses, timing, method)  
+- Weeding, intercultivation  
+- Harvest timeline  
+
+🦠 Pest & Disease Diagnosis  
+- Identify pest/disease  
+- Give symptoms  
+- Give exact treatment  
+- Give correct pesticide dose (ml/acre or gm/litre)  
+- Give organic + chemical options  
+- Give prevention steps  
+
+🌱 Soil & Fertility  
+- Soil health  
+- pH-related advice  
+- Nutrients deficiency correction  
+
+☁️ Weather-Based Advisory  
+- Rainfall alerts  
+- Irrigation changes  
+- Disease risk  
+
+💧 Irrigation  
+- Drip / flood quantity  
+- Schedule based on crop stage  
+
+🚜 Machinery  
+- Suitable tools and machines  
+
+💰 Market & Govt Schemes  
+- Provide only verified information  
+- No guessing  
+
+❌ You must NOT  
+- Provide non-agriculture answers  
+- Give medical, legal, political advice  
+- Guess numbers (if not sure, say “data not available”)
+
+Always answer in **simple, short bullet points** so every farmer can understand easily.
+Reply strictly and exclusively in English. Do not use any other language.
+    `,
+
+    'hi': `
+आप **कृषि-मित्र**, भारतीय किसानों के लिए एक उन्नत एआई कृषि विशेषज्ञ हैं।
+
+आपके उत्तर हमेशा:
+
+✔ 100% सटीक  
+✔ ICAR, कृषि विज्ञान केंद्र (KVK) और मानक कृषि विज्ञान पर आधारित  
+✔ छोटे, स्पष्ट और हमेशा **बिंदुओं में** ✔ भारतीय फसलें, जलवायु और मिट्टी के अनुसार  
+✔ किसान-अनुकूल और व्यावहारिक  
+✔ केवल कृषि विषयों तक सीमित  
+
+आपको हमेशा इन विषयों को प्रोफेशनल तरीके से कवर करना है:
+
+🌾 फसल प्रबंधन  
+🦠 कीट व रोग पहचान + उपचार  
+🌱 मिट्टी व पोषक तत्व सुधार  
+☁️ मौसम आधारित सलाह  
+💧 सिंचाई शेड्यूल  
+🚜 कृषि मशीनरी  
+💰 सरकारी योजनाएँ  
+(केवल सत्यापित जानकारी)  
+
+❌ गैर-कृषि सवालों का जवाब न दें।
+
+हमेशा सरल भाषा और **बिंदुओं में उत्तर दें।**
+उत्तर हमेशा हिन्दी में दें।
+    `,
+
+    'ta': `
+நீங்கள் **கிரிஷி-மித்திரா**, இந்திய விவசாயிகளுக்கான மேம்பட்ட செயற்கை நுண்ணறிவு வேளாண் நிபுணர்.
+
+உங்கள் பதில்கள் எப்போதும்:
+
+✔ 100% துல்லியமானவை  
+✔ ICAR, KVK ஆலோசனைகள் மற்றும் அறிவியல் வேளாண்மையை அடிப்படையாக கொண்டவை  
+✔ எளிமையான, தெளிவான, எப்போதும் **புள்ளிகளில்** ✔ இந்திய பயிர்கள், மண், காலநிலை ஆகியவற்றிற்கு பொருத்தமானவை  
+✔ விவசாயி நட்பு மற்றும் செயல்படக்கூடியவை  
+✔ வேளாண்மை தொடர்பான கேள்விகளுக்கு மட்டும் பதில்
+
+நீங்கள் பின்வரும் தலைப்புகளை தொழில்முறை முறையில் கையாள வேண்டும்:
+
+🌾 பயிர் மேலாண்மை  
+– விதைப்பு நேரம், விதை வீதம்  
+– பாசன அட்டவணை  
+– உர அட்டவணை (NPK அளவு)  
+– புல் கட்டுப்பாடு  
+– அறுவடை நேரம்  
+
+🦠 பூச்சி & நோய் மேலாண்மை  
+– நோய்/பூச்சி அடையாளம்  
+– அறிகுறிகள்  
+– துல்லியமான மருந்து  
+– சரியான டோஸ் (ml/acre / gm/litre)  
+– இயற்கை + இரசாயன விருப்பங்கள்  
+– தடுப்பு நடவடிக்கைகள்  
+
+🌱 மண் & சத்து  
+– மண் pH  
+– சத்து குறைபாடு திருத்தம்  
+
+☁️ காலநிலை ஆலோசனை  
+– மழை தாக்கம்  
+– பாசன மாற்றங்கள்  
+– நோய் அபாயம்  
+
+💧 பாசனம்  
+– துளி/ஆழி அளவு  
+– பயிர் நிலை அடிப்படையில் அட்டவணை  
+
+💰 அரசு திட்டங்கள்  
+– சரிபார்க்கப்பட்ட தகவல் மட்டும்  
+– எந்த ஊகமும் இல்லை  
+
+❌ செய்யக்கூடாது: மருத்துவ, சட்ட, அரசியல் கேள்விகளுக்கு பதில் அளிக்க வேண்டாம்.  
+எப்போதும் எளிய தமிழில் **புள்ளிகளாக** பதிலளிக்கவும்.
+    `,
+
+    'kn': `
+ನೀವು **ಕೃಷಿ-ಮಿತ್ರ**, ಭಾರತೀಯ ರೈತರಿಗಾಗಿ ವಿನ್ಯಾಸಗೊಳಿಸಿದ ಅತ್ಯಾಧುನಿಕ ಕೃಷಿ ತಜ್ಞ AI.
+
+ನಿಮ್ಮ ಉತ್ತರಗಳು ಸದಾ:
+
+✔ 100% ನಿಖರವಾಗಿರಬೇಕು  
+✔ ICAR ಮತ್ತು KVK ಮಾರ್ಗಸೂಚಿಗಳ ಆಧಾರದ ಮೇಲೆ  
+✔ ಸರಳ, ಸ್ಪಷ್ಟ, ಮತ್ತು **ಬುಲೆಟ್ ಪಾಯಿಂಟ್‌ಗಳಲ್ಲಿ** ✔ ಭಾರತದ ಹವಾಮಾನ, ಮಣ್ಣು, ಬೆಳೆಗಳಿಗೆ ಹೊಂದುವಂತೆ  
+✔ ರೈತರಿಗೆ ಅರ್ಥವಾಗುವ ರೀತಿಯಲ್ಲಿ  
+✔ ಕೃಷಿ ವಿಷಯಗಳಿಗೆ ಮಾತ್ರ
+
+ನೀವು ಮುಂದಿನ ವಿಷಯಗಳಲ್ಲಿ ತಜ್ಞ ಸಲಹೆ ನೀಡಬೇಕು:
+
+🌾 ಬೆಳೆ ನಿರ್ವಹಣೆ  
+– ಬಿತ್ತನೆ ಸಮಯ  
+– ನೀರಾವರಿ ವೇಳಾಪಟ್ಟಿ  
+– ಗೊಬ್ಬರದ NPK ದೋಷೆ  
+– ತುಳುಕಾಟ, ಕಳೆ ತೆಗೆದುಹಾಕುವುದು  
+– ಕೊಯ್ಯುವ ಸಮಯ  
+
+🦠 ಕೀಟ & ರೋಗ ಗುರುತಿಕೆ  
+– ಲಕ್ಷಣಗಳು  
+– ನಿಖರವಾದ ಚಿಕಿತ್ಸೆ  
+– ಸರಿಯಾದ ಡೋಸ್ (ml/acre ಅಥವಾ gm/litre)  
+– ಜೈವಿಕ + ರಾಸಾಯನಿಕ ಆಯ್ಕೆಗಳು  
+– ತಡೆ ಕ್ರಮಗಳು  
+
+🌱 ಮಣ್ಣು & ಪೋಷಕಾಂಶ  
+– ಮಣ್ಣು pH  
+– ಕೊರತೆ ಸರಿಪಡಿಸುವುದು  
+
+☁️ ಹವಾಮಾನ ಆಧರಿತ ಸಲಹೆ  
+– ಮಳೆ ಎಚ್ಚರಿಕೆ  
+– ನೀರಾವರಿ ಬದಲಾವಣೆ  
+
+💧 ನೀರಾವರಿ  
+– ಡ್ರಿಪ್/ಫ್ಲಡ್ ಪ್ರಮಾಣ  
+– ಬೆಳೆ ಹಂತಕ್ಕೆ ಅನುಗುಣವಾಗಿ  
+
+💰 ಸರಕಾರಿ ಯೋಜನೆಗಳ ಮಾಹಿತಿ  
+– ಪರಿಶೀಲಿತ ಡೇಟಾ ಮಾತ್ರ  
+
+❌ ವೈದ್ಯಕೀಯ, ಕಾನೂನು, ರಾಜಕೀಯ ಪ್ರಶ್ನೆಗಳಿಗೆ ಉತ್ತರಿಸಬಾರದು.  
+ಯಾವಾಗಲೂ ಸರಳ ಕನ್ನಡದಲ್ಲಿ **ಬುಲೆಟ್ ಪಾಯಿಂಟ್‌ಗಳಲ್ಲಿ** ಉತ್ತರಿಸಬೇಕು।
+    `,
+
+    'ml': `
+നിങ്ങൾ **കൃഷി-മിത്ര**, ഇന്ത്യൻ കർഷകർക്ക് വേണ്ടി രൂപകൽപ്പന ചെയ്ത ഒരു അത്യാധുനിക AI കൃഷി വിദഗ്ധനാണ്.
+
+നിങ്ങളുടെ മറുപടികൾ എപ്പോഴും:
+
+✔ 100% കൃത്യമായിരിക്കണം  
+✔ ICAR, KVK മാർഗനിർദേശങ്ങളെ അടിസ്ഥാനമാക്കിയുള്ളത്  
+✔ എളുപ്പം മനസിലാകുന്ന **പോയിന്റുകളായി** ✔ ഇന്ത്യൻ വിളകൾ, മണ്ണ്, കാലാവസ്ഥ എന്നിവയെ അടിസ്ഥാനമാക്കി  
+✔ കർഷക സൗഹൃദവും പ്രായോഗികവുമുള്ളത്  
+✔ കൃഷി വിഷയങ്ങൾക്ക് മാത്രം
+
+നിങ്ങൾ നൽകേണ്ട പ്രധാന മാർഗനിർദേശങ്ങൾ:
+
+🌾 വിള മാനേജ്മെന്റ്  
+– വിതയ്‌ക്കേണ്ട സമയം  
+– ജലസേചന ക്രമം  
+– NPK വളത്തിന്റെ കൃത്യമായ അളവ്  
+– കളനാശനം  
+– കൊയ്ത്ത് സമയം  
+
+🦠 കീട–രോഗ നിർണയം  
+– രോഗലക്ഷണങ്ങൾ  
+– കൃത്യമായ ചികിത്സ  
+– ശരിയായ ഡോസ് (ml/acre / gm/litre)  
+– ഓർഗാനിക് + കെമിക്കൽ ഓപ്ഷനുകൾ  
+– മുൻകരുതൽ നടപടികൾ  
+
+🌱 മണ്ണ് & പോഷക കുറവ്  
+– pH പ്രശ്നങ്ങൾ  
+– പോഷക കുറവ് പരിഹാരം  
+
+☁️ കാലാവസ്ഥാ അടിസ്ഥാനത്തിലുള്ള നിർദ്ദേശങ്ങൾ  
+– മഴ മുന്നറിയിപ്പ്  
+– ജലസേചന മാറ്റങ്ങൾ  
+
+💧 ജലസേചനം  
+– ഡ്രിപ്പ്/ഫ്ളഡ് അളവ്  
+– വിളയുടെ വളർച്ചാ ഘട്ടം അനുസരിച്ച്  
+
+💰 സർക്കാർ പദ്ധതികൾ  
+– സ്ഥിരീകരിച്ച വിവരങ്ങൾ മാത്രം  
+
+❌ മെഡിക്കൽ, നിയമ, രാഷ്ട്രീയ വിഷയങ്ങൾക്ക് മറുപടി നൽകരുത്.  
+എപ്പോഴും ലളിതമായ മലയാളത്തിൽ **പോയിന്റുകളായി** മറുപടി നൽകുക।
+    `
+};
+           
+            // --- GEOLOCATION HELPER FUNCTION ---
+            // This function simulates a reverse geocoding API call
+            // In a production app, this would call a real API (like Google Maps Geocoding)
+            const getLocalityFromCoordinates = async (latitude, longitude) => {
+                // Mock reverse geocoding to a specific city/state for demonstration
+                // Based on common coordinate ranges for a popular Indian city
+                if (latitude && longitude) {
+                    // For example, if we were in the range of Mumbai:
+                    // if (latitude > 18 && latitude < 19 && longitude > 72 && longitude < 73) {
+                    //     return 'Mumbai, Maharashtra, India';
+                    // }
+                    // To make it functional, we will use a generic default based on the device's location
+                    // which is good enough for an AI prompt.
+                    return `Your Current Area (Lat: ${latitude.toFixed(2)}, Lon: ${longitude.toFixed(2)})`;
+                }
+                return 'an unknown location in India'; // Fallback
+            };
+
+            const initializeGeolocation = () => {
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(
+                        async (position) => {
+                            const lat = position.coords.latitude;
+                            const lon = position.coords.longitude;
+                            // Set the global location variable to the dynamically fetched place
+                            userLocation = await getLocalityFromCoordinates(lat, lon);
+                            console.log(`Geolocation successful. User location set to: ${userLocation}`);
+                        },
+                        (error) => {
+                            console.error(`Geolocation error: ${error.message}`);
+                            userLocation = 'Greater Noida, Uttar Pradesh, India'; // Fallback to original
+                            showAlert("Location Access Denied", "Please allow location access to get local farm advice. Using default location (Greater Noida) for now.");
+                        },
+                        { enableHighAccuracy: false, timeout: 5000, maximumAge: 0 }
+                    );
+                } else {
+                    console.error("Geolocation is not supported by this browser.");
+                    showAlert("Location Not Supported", "Your browser does not support Geolocation. Using default location (Greater Noida).");
+                }
+            };
+            // --- END GEOLOCATION HELPER FUNCTION ---
+
+
+            const updateUIForLanguage = (lang) => {
+                currentLanguage = lang;
+                const userInputPlaceholder = document.getElementById('userInput');
+                userInputPlaceholder.placeholder = placeholders[currentLanguage];
+
+                // ************ MODIFIED: Update button text ************
+                dailyAdvisoryButton.innerHTML = buttonText[currentLanguage].dailyAdvisory;
+                imageAnalysisButton.innerHTML = buttonText[currentLanguage].imageAnalysis;
+                govtSchemesButton.innerHTML = buttonText[currentLanguage].govtSchemes;
+                marketPriceButton.innerHTML = buttonText[currentLanguage].marketPrice;
+                localNewsButton.innerHTML = buttonText[currentLanguage].localNews; // NEW BUTTON
+                officerDetailsButton.innerHTML = buttonText[currentLanguage].officerDetails;
+                // ************ END MODIFIED ************
+
+                Object.values(langButtons).forEach(btn => {
+                    btn.classList.remove('bg-green-500', 'text-white');
+                    btn.classList.add('bg-gray-200', 'text-gray-800');
+                });
+                langButtons[currentLanguage].classList.remove('bg-gray-200', 'text-gray-800');
+                langButtons[currentLanguage].classList.add('bg-green-500', 'text-white');
+                const firstAiMessageP = document.querySelector('#chat-container .ai-message p');
+                if (firstAiMessageP) firstAiMessageP.textContent = welcomeMessages[currentLanguage];
+            };
+
+            // Initial UI update
+            updateUIForLanguage(currentLanguage);
+            // --- Call Geolocation on startup ---
+            initializeGeolocation();
+            // --- END Geolocation call ---
+
+            langButtons.en.addEventListener('click', () => updateUIForLanguage('en'));
+            langButtons.hi.addEventListener('click', () => updateUIForLanguage('hi'));
+            langButtons.ta.addEventListener('click', () => updateUIForLanguage('ta'));
+            langButtons.kn.addEventListener('click', () => updateUIForLanguage('kn'));
+            langButtons.ml.addEventListener('click', () => updateUIForLanguage('ml')); // ADDED MALAYALAM LISTENER
+
+            function showAlert(title, message) {
+                alertTitle.textContent = title;
+                alertMessage.textContent = message;
+                alertModal.classList.remove('hidden');
+            }
+            alertCloseButton.addEventListener('click', () => {
+                alertModal.classList.add('hidden');
+            });
+
+            // --- Text-to-Speech function ---
+            function speakText(text) {
+                if (!voiceEnabled) return;
+                if (!('speechSynthesis' in window) || !('SpeechSynthesisUtterance' in window)) {
+                    // Browser doesn't support TTS
+                    return;
+                }
+                try {
+                    window.speechSynthesis.cancel(); // stop any existing speech
+                } catch (e) {}
+
+                const utter = new SpeechSynthesisUtterance(text);
+                // UPDATED TTS LANG CONFIGURATION
+                utter.lang =
+                    currentLanguage === "hi" ? "hi-IN" :
+                    currentLanguage === "ta" ? "ta-IN" :
+                    currentLanguage === "kn" ? "kn-IN" :
+                    currentLanguage === "ml" ? "ml-IN" : // ADDED MALAYALAM
+                    "en-IN";
+
+                // Slightly adjust pitch/rate for clarity
+                utter.pitch = 1;
+                utter.rate = 1;
+                // Start speaking
+                try {
+                    window.speechSynthesis.speak(utter);
+                } catch (e) {
+                    console.error("SpeechSynthesis error:", e);
+                }
+            }
+
+            // --- Chat Message Functions ---
+            const addMessage = (text, sender, isImage = false) => {
+                const messageDiv = document.createElement('div');
+                messageDiv.classList.add('message-bubble', 'shadow-md');
+                if (sender === 'user') {
+                    messageDiv.classList.add('user-message', 'self-end');
+                } else {
+                    messageDiv.classList.add('ai-message', 'self-start');
+                }
+
+                if (isImage) {
+                    const imageElement = document.createElement('img');
+                    imageElement.src = text;
+                    imageElement.classList.add('w-full', 'rounded-lg');
+                    messageDiv.appendChild(imageElement);
+                } else {
+                    const messageContent = document.createElement('div'); // Changed from <p> to <div> to allow structured children
+
+                    // ************ START FIX FOR FORMATTING ************
+                    
+                    // Split the text by newlines. Filter out empty lines caused by multiple newlines.
+                    const lines = text.split('\n').filter(line => line.trim() !== '');
+                    
+                    if (lines.length > 0) {
+                        const ul = document.createElement('ul');
+                        ul.classList.add('list-disc', 'list-inside');
+                        
+                        let isListMode = false;
+                        
+                        lines.forEach(line => {
+                            let trimmedLine = line.trim();
+                            
+                            // Check if line starts with a common list indicator (*, - or a number/dot, or a special character like a star)
+                            const isListItem = trimmedLine.match(/^(\*|\-|\d+\.|\•|—)\s/);
+
+                            if (isListItem || isListMode) {
+                                // If it's explicitly a list item or we're in list mode
+                                if (isListItem) {
+                                    // Clean the indicator for display
+                                    trimmedLine = trimmedLine.replace(/^(\*|\-|\d+\.|\•|—)\s*/, '').trim();
+                                    isListMode = true; // Stay in list mode until a clear non-list item is encountered
+                                }
+                                
+                                if (trimmedLine) {
+                                    const li = document.createElement('li');
+                                    li.innerHTML = trimmedLine; // Use innerHTML to preserve links/bolding if present
+                                    ul.appendChild(li);
+                                }
+                            } else {
+                                // If it's a paragraph or header, end the current list (if any) and start a new paragraph/div.
+                                if (ul.children.length > 0) {
+                                    messageContent.appendChild(ul.cloneNode(true)); // Append existing list
+                                    ul.innerHTML = ''; // Clear for next list
+                                }
+                                isListMode = false;
+                                
+                                const p = document.createElement('p');
+                                p.classList.add('mb-2'); // Add small spacing between paragraphs/titles
+                                p.innerHTML = trimmedLine;
+                                messageContent.appendChild(p);
+                            }
+                        });
+                        
+                        // Append any remaining list items
+                        if (ul.children.length > 0) {
+                            messageContent.appendChild(ul);
+                        }
+                    } else {
+                        // If no newlines, treat as simple paragraph
+                        const p = document.createElement('p');
+                        p.textContent = text;
+                        messageContent.appendChild(p);
+                    }
+                    // ************ END FIX FOR FORMATTING ************
+
+
+                    messageDiv.appendChild(messageContent);
+                }
+
+                const timestamp = document.createElement('span');
+                timestamp.classList.add('message-timestamp');
+                timestamp.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                messageDiv.appendChild(timestamp);
+
+                // If AI message (and not image) add Speak Again button and auto-speak (if enabled)
+                if (sender === 'ai' && !isImage) {
+                    const speakAgainBtn = document.createElement('button');
+                    speakAgainBtn.classList.add('speak-btn');
+                    speakAgainBtn.innerHTML = `<i class="fas fa-volume-up"></i><span class="text-sm">Speak Again</span>`;
+                    speakAgainBtn.title = "Play audio for this response";
+                    speakAgainBtn.addEventListener('click', () => {
+                        // create clean text without list markers for better speech
+                        let playable = '';
+                        if (typeof text === 'string') {
+                            playable = text.replace(/[\*\-]/g, ' ');
+                        } else {
+                            playable = String(text);
+                        }
+                        speakText(playable);
+                    });
+
+                    // place speak button after the content but before timestamp
+                    // insert before timestamp element
+                    messageDiv.insertBefore(speakAgainBtn, timestamp);
+                }
+
+                chatContainer.appendChild(messageDiv);
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+
+                // Auto-speak AI messages
+                if (sender === 'ai' && !isImage) {
+                    let plainText = '';
+                    if (typeof text === 'string') plainText = text.replace(/[\*\-]/g, ' ');
+                    else plainText = String(text);
+                    // Delay a tiny bit so speech doesn't overlap with UI rendering
+                    setTimeout(() => { speakText(plainText); }, 120);
+                }
+            };
+
+            const addLoadingDots = () => {
+                const loadingDiv = document.createElement('div');
+                loadingDiv.classList.add('ai-message', 'message-bubble', 'self-start', 'shadow-md');
+                loadingDiv.innerHTML = `
+                    <div class="loading-dots">
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                    </div>
+                `;
+                chatContainer.appendChild(loadingDiv);
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+                return loadingDiv;
+            };
+
+            const removeLoadingDots = (loadingDiv) => {
+                if (loadingDiv) loadingDiv.remove();
+            };
+
+            async function fetchWithRetry(url, options, maxRetries = 5, delay = 1000) {
+                for (let i = 0; i < maxRetries; i++) {
+                    try {
+                        const response = await fetch(url, options);
+                        if (response.ok) return response;
+                        else if ((response.status === 503 || response.status === 429) && i < maxRetries - 1) {
+                            await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, i)));
+                        } else {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                    } catch (error) {
+                        if (i < maxRetries - 1) {
+                            await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, i)));
+                        } else {
+                            throw error;
+                        }
+                    }
+                }
+            }
+
+            const callGeminiAPI = async (prompt, image = null, grounded = false) => {
+                const loadingMessage = addLoadingDots();
+                try {
+                    const apiKey = GEMINI_API_KEY;
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${CHAT_MODEL}:generateContent?key=${apiKey}`;
+                    const systemPrompt = systemPrompts[currentLanguage];
+                    const parts = [{ text: `${systemPrompt} ${prompt}` }];
+                    if (image) {
+                        parts.push({
+                            inlineData: {
+                                mimeType: "image/png",
+                                data: image.split(',')[1] // Extract base64 data
+                            }
+                        });
+                    }
+
+                    const payload = {
+                        contents: [{ role: "user", parts }],
+                        model: CHAT_MODEL,
+                        tools: grounded ? [{ "google_search": {} }] : undefined,
+                    };
+
+                    const response = await fetchWithRetry(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) {
+                        const errorBody = await response.json();
+                        console.error("Gemini API Error Response:", errorBody);
+                        throw new Error(`HTTP error! status: ${response.status} - ${errorBody?.error?.message || response.statusText}`);
+                    }
+
+                    const result = await response.json();
+                    const aiResponseText = result?.candidates?.[0]?.content?.parts?.[0]?.text || "I'm sorry, I couldn't generate a response. Please try again.";
+
+                    removeLoadingDots(loadingMessage);
+                    addMessage(aiResponseText, "ai");
+                } catch (error) {
+                    console.error("API call failed:", error);
+                    removeLoadingDots(loadingMessage);
+                    addMessage(`I'm sorry, I encountered an error and cannot generate a response right now. Please check the browser Console (F12) for the exact error message.`, "ai");
+                    showAlert("API Error", `A connection error occurred. Check the browser Console (F12) for a red error message and status code (400, 403, 429) to determine the cause.`);
+                }
+            };
+
+            const handleSendMessage = () => {
+                const text = userInput.value.trim();
+                if (text === '') return;
+                addMessage(text, 'user');
+                callGeminiAPI(text);
+                userInput.value = '';
+            };
+
+            // --- Event Listeners ---
+            sendButton.addEventListener('click', handleSendMessage);
+            userInput.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    handleSendMessage();
+                }
+            });
+
+            // --- Feature Button Logic - MODIFIED TO USE userLocation ---
+            dailyAdvisoryButton.addEventListener('click', () => {
+                const prompts = {
+                    // **MODIFIED:** Replaced 'Greater Noida, Uttar Pradesh, India' with ${userLocation}
+                    'en': `What is the weather like today in ${userLocation}, and based on this, provide a daily farming advisory for local crops like rice, wheat, and sugarcane. The advisory should be in a friendly tone and in points. **(STRICTLY RESPOND IN ENGLISH)**`,
+                    'hi': `आज ${userLocation} में मौसम कैसा है, और इसके आधार पर, चावल, गेहूं और गन्ने जैसी स्थानीय फसलों के लिए दैनिक कृषि सलाह प्रदान करें। सलाह एक दोस्ताना, संवादी स्वर में होनी चाहिए और बिंदुओं में हो।`,
+                    'ta': `இன்று ${userLocation} இல் வானிலை எப்படி உள்ளது, அதனடிப்படையில், அரிசி, கோதுமை, மற்றும் கரும்பு போன்ற உள்ளூர் பயிர்களுக்கான தினசரி விவசாய ஆலோசனையை வழங்கவும். இந்த ஆலோசனை ஒரு விவசாயியுடன் நேரடியாகப் பேசுவது போல் ஒரு நட்பு, உரையாடல் தொனியில் இருக்க வேண்டும். மேலும், புள்ளிகளாக பதிலளிக்கவும்।`,
+                    'kn': `ಇಂದು ${userLocation} ನಲ್ಲಿ ಹವಾಮಾನ ಹೇಗಿದೆ, ಮತ್ತು ಇದರ ಆಧಾರದ ಮೇಲೆ, ಭತ್ತ, ಗೋಧಿ ಮತ್ತು ಕಬ್ಬು ಮುಂತಾದ ಸ್ಥಳೀಯ ಬೆಳೆಗಳಿಗೆ ದೈನಂದಿನ ಕೃಷಿ ಸಲಹೆಯನ್ನು ಒದಗಿಸಿ. ಸಲಹೆಯು ರೈತರೊಂದಿಗೆ ನೇರವಾಗಿ ಮಾತನಾಡುವಂತೆ ಸ್ನೇಹಪರ, ಸಂವಾದಾತ್ಮಕ ಧ್ವನಿಯಲ್ಲಿರಬೇಕು ಮತ್ತು ಪಾಯಿಂಟ್‌ಗಳಲ್ಲಿ ಉತ್ತರಿಸಿ।`,
+                    'ml': `ഇന്ന് ${userLocation} യിലെ കാലാവസ്ഥ എങ്ങനെയാണ്, അതിനെ അടിസ്ഥാനമാക്കി, നെല്ല്, ഗോതമ്പ്, കരിമ്പ് എന്നിവയുടെ പ്രാദേശിക വിളകൾക്കായി ഒരു ദിനംപ്രതി കാർഷിക ഉപദേശം നൽകുക. ഉപദേശം സൗഹൃദപരവും പോയിന്റുകളിലുമായിരിക്കണം.`, // **UPDATED MALAYALAM PROMPT**
+                };
+                const prompt = prompts[currentLanguage] || prompts['en'];
+                addMessage(`I am fetching your daily advisory for ${userLocation}...`, 'user');
+                callGeminiAPI(prompt, null, true);
+            });
+
+            imageAnalysisButton.addEventListener('click', () => {
+                imageModal.classList.remove('hidden');
+            });
+
+            govtSchemesButton.addEventListener('click', () => {
+                const prompts = {
+                    // **MODIFIED:** Replaced 'Greater Noida, Uttar Pradesh, India' with ${userLocation}
+                    'en': `What are the most recent local government schemes and subsidies available for farmers in ${userLocation}? Please list them in a concise, bulleted format. **(STRICTLY RESPOND IN ENGLISH)**`,
+                    'hi': `${userLocation} में किसानों के लिए उपलब्ध नवीनतम स्थानीय सरकारी योजनाएं और सब्सिडी क्या हैं? कृपया उन्हें एक संक्षिप्त, बुलेटेड प्रारूप में सूचीबद्ध करें।`,
+                    'ta': `${userLocation} இல் உள்ள விவசாயிகளுக்கான சமீபத்திய உள்ளூர் அரசு திட்டங்கள் மற்றும் மானியங்கள் யாவை? அவற்றை ஒரு சுருக்கமான, புல்லட் வடிவத்தில் பட்டியலிடவும்।`,
+                    'kn': `${userLocation} ರೈತರಿಗೆ ಲಭ್ಯವಿರುವ ಇತ್ತೀಚಿನ ಸ್ಥಳೀಯ ಸರಕಾರ ಯೋಜನೆಗಳು ಯಾವುವು? ದಯವಿಟ್ಟು ಅವುಗಳನ್ನು ಸಂಕ್ಷಿಪ್ತ, ಬುಲೆಟ್ ರೂಪದಲ್ಲಿ ಪಟ್ಟಿ ಮಾಡಿ।`,
+                    'ml': `${userLocation} ലെ കർഷകർക്ക് ലഭ്യമായ ഏറ്റവും പുതിയ പ്രാദേശിക സർക്കാർ പദ്ധതികളും സബ്‌സിഡികളും എന്തൊക്കെയാണ്? ദയവായി അവയെ സംക്ഷിപ്തവും പോയിന്റുകളിലുമുള്ള ഫോർമാറ്റിൽ പട്ടികപ്പെടുത്തുക।` // ADDED MALAYALAM
+                };
+                const prompt = prompts[currentLanguage] || prompts['en'];
+                addMessage(`I am searching for the latest government schemes for you in ${userLocation}...`, 'user');
+                callGeminiAPI(prompt, null, true);
+            });
+
+            marketPriceButton.addEventListener('click', () => {
+                const prompts = {
+                    // **MODIFIED:** Replaced 'Greater Noida, Uttar Pradesh, India' with ${userLocation}
+                    'en': `What are the current market prices for rice, wheat, and sugarcane in ${userLocation}? Provide the information in a clear, easy-to-read format. **(STRICTLY RESPOND IN ENGLISH)**`,
+                    'hi': `${userLocation} में चावल, गेहूं और गन्ने के वर्तमान बाजार भाव क्या हैं? जानकारी को एक स्पष्ट, पढ़ने में आसान प्रारूप में प्रदान करें।`,
+                    'ta': `${userLocation} இல் அரிசி, கோதுமை, மற்றும் கரும்பு ஆகியவற்றின் தற்போதைய சந்தை விலைகள் என்ன? தகவலைத் தெளிவான, எளிதாகப் படிக்கக்கூடிய வடிவத்தில் வழங்கவும்।`,
+                    'kn': `${userLocation} ನಲ್ಲಿ ಭತ್ತ, ಗೋಧಿ ಮತ್ತು ಕಬ್ಬಿನ ಪ್ರಸ್ತುತ ಮಾರುಕಟ್ಟೆ ಬೆಲೆಗಳು ಯಾವುವು? ಮಾಹಿತಿಯನ್ನು ಸ್ಪರ್ಶಿತ, ಸುಲಭವಾಗಿ ಓದಲ್ಪಡುವ ಸ್ವರೂಪದಲ್ಲಿ ನೀಡಿ।`,
+                    'ml': `${userLocation} ലെ നെല്ല്, ഗോതമ്പ്, കരിമ്പ് എന്നിവയുടെ നിലവിലെ മാർക്കറ്റ് വിലകൾ എന്തൊക്കെയാണ്? വിവരങ്ങൾ വ്യക്തവും എളുപ്പത്തിൽ വായിക്കാവുന്നതുമായ ഫോർമാറ്റിൽ നൽകുക।` // ADDED MALAYALAM
+                };
+                const prompt = prompts[currentLanguage] || prompts['en'];
+                addMessage(`I am fetching the latest market prices for you in ${userLocation}...`, "user");
+                callGeminiAPI(prompt, null, true);
+            });
+            
+            // NEW BUTTON LOGIC FOR LOCAL NEWS
+            localNewsButton.addEventListener('click', () => {
+                const prompts = {
+                    'en': `What are the top 3-5 latest news headlines or important announcements relevant to farmers and agriculture in ${userLocation}? Provide the news items with short bullet points, titles, and a link if available. **(STRICTLY RESPOND IN ENGLISH)**`,
+                    'hi': `${userLocation} में किसानों और कृषि से संबंधित शीर्ष 3-5 नवीनतम समाचार सुर्खियाँ या महत्वपूर्ण घोषणाएँ क्या हैं? समाचार वस्तुओं को संक्षिप्त बुलेट पॉइंट, शीर्षकों और यदि उपलब्ध हो तो लिंक के साथ प्रदान करें।`,
+                    'ta': `${userLocation} இல் விவசாயிகள் மற்றும் விவசாயம் தொடர்பான முதல் 3-5 சமீபத்திய செய்தி தலைப்புகள் அல்லது முக்கியமான அறிவிப்புகள் யாவை? செய்தி உருப்படிகளை சுருக்கமான புல்லட் புள்ளிகள், தலைப்புகள் மற்றும் ஒரு இணைப்புடன் (கிடைத்தால்) வழங்கவும்.`,
+                    'kn': `${userLocation} ನಲ್ಲಿ ರೈತರು ಮತ್ತು ಕೃಷಿಗೆ ಸಂಬಂಧಿಸಿದ ಪ್ರಮುಖ 3-5 ಇತ್ತೀಚಿನ ಸುದ್ದಿ ಮುಖ್ಯಾಂಶಗಳು ಅಥವಾ ಪ್ರಮುಖ ಪ್ರಕಟಣೆಗಳು ಯಾವುವು? ಸುದ್ದಿ ವಸ್ತುಗಳನ್ನು ಸಂಕ್ಷಿಪ್ತ ಬುಲೆಟ್ ಪಾಯಿಂಟ್‌ಗಳು, ಶೀರ್ಷಿಕೆಗಳು ಮತ್ತು ಲಭ್ಯವಿದ್ದರೆ ಲಿಂಕ್‌ನೊಂದಿಗೆ ಒದಗಿಸಿ.`,
+                    'ml': `${userLocation} ലെ കർഷകർക്കും കൃഷിക്കും പ്രസക്തമായ ഏറ്റവും പുതിയ 3-5 പ്രധാന വാർത്താ തലക്കെട്ടുകളോ പ്രധാനപ്പെട്ട അറിയിപ്പുകളോ എന്തൊക്കെയാണ്? വാർത്താ ഇനങ്ങൾ ചെറിയ പോയിന്റുകൾ, തലക്കെട്ടുകൾ, ലഭ്യമാണെങ്കിൽ ലിങ്ക് എന്നിവ സഹിതം നൽകുക.`,
+                };
+                const prompt = prompts[currentLanguage] || prompts['en'];
+                addMessage(`I am fetching the top local agriculture news for ${userLocation}...`, "user");
+                callGeminiAPI(prompt, null, true); // Grounded call to fetch current news
+            });
+            // END NEW BUTTON LOGIC FOR LOCAL NEWS
+
+
+            // NEW BUTTON LOGIC - MODIFIED TO USE userLocation
+            officerDetailsButton.addEventListener('click', () => {
+                const prompts = {
+                    // **MODIFIED:** Replaced 'Greater Noida, Uttar Pradesh, India' with ${userLocation}
+                    'en': `Provide contact details (phone number, address) for the nearest Krishi Vigyan Kendra (KVK) and District Agriculture Officer (DAO) for the ${userLocation} area. List the information clearly with names and titles. **(STRICTLY RESPOND IN ENGLISH)**`,
+                    'hi': ` ${userLocation} क्षेत्र के लिए निकटतम कृषि विज्ञान केंद्र (KVK) और जिला कृषि अधिकारी (DAO) के संपर्क विवरण (फोन नंबर, पता) प्रदान करें। जानकारी को स्पष्ट रूप से नाम और पदनाम के साथ सूचीबद्ध करें।`,
+                    'ta': `${userLocation} பகுதிக்கு அருகில் உள்ள வேளாண் அறிவியல் மையம் (KVK) மற்றும் மாவட்ட வேளாண்மை அதிகாரி (DAO) ஆகியோரின் தொடர்பு விவரங்களை (தொலைபேசி எண், முகவரி) வழங்கவும். பெயர் மற்றும் பதவியுடன் தெளிவாகப் பட்டியலிடவும்।`,
+                    'kn': `${userLocation} ಪ್ರದೇಶಕ್ಕಾಗಿ ಹತ್ತಿರದ ಕೃಷಿ ವಿಜ್ಞಾನ ಕೇಂದ್ರ (KVK) ಮತ್ತು ಜಿಲ್ಲಾ ಕೃಷಿ ಅಧಿಕಾರಿಯ (DAO) ಸಂಪರ್ಕ ವಿವರಗಳನ್ನು (ಫೋನ್ ಸಂಖ್ಯೆ, ವಿಳಾಸ) ಒದಗಿಸಿ. ಹೆಸರು ಮತ್ತು ಹುದ್ದೆಗಳೊಂದಿಗೆ ಮಾಹಿತಿಯನ್ನು ಸ್ಪಷ್ಟವಾಗಿ ಪಟ್ಟಿ ಮಾಡಿ।`,
+                    'ml': `${userLocation} പ്രദേശത്തിന് സമീപമുള്ള കൃഷി വിജ്ഞാന കേന്ദ്രത്തിന്റെയും (KVK) ജില്ലാ കൃഷി ഓഫീസറുടെയും (DAO) ബന്ധപ്പെടാനുള്ള വിവരങ്ങൾ (ഫോൺ നമ്പർ, വിലാസം) നൽകുക. പേരും പദവിയും സഹിതം വിവരങ്ങൾ വ്യക്തമായി പട്ടികപ്പെടുത്തുക।`
+                };
+                const prompt = prompts[currentLanguage] || prompts['en'];
+                addMessage(`I am searching for the local agricultural officer's contact details for ${userLocation}...`, "user");
+                callGeminiAPI(prompt, null, true);
+            });
+            // END NEW BUTTON LOGIC
+
+            // --- Mic Button ---
+            micButton.addEventListener('click', () => {
+                if (!('SpeechRecognition' in window) && !('webkitSpeechRecognition' in window)) {
+                    showAlert("Feature Not Supported", "Your browser does not support speech recognition. Please try using Chrome or Firefox.");
+                    return;
+                }
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                const recognition = new SpeechRecognition();
+                // UPDATED SPEECH RECOGNITION LANG CONFIGURATION
+                recognition.lang =
+                    currentLanguage === 'ml' ? 'ml-IN' : // ADDED MALAYALAM
+                    currentLanguage === 'ta' ? 'ta-IN' :
+                    currentLanguage === 'kn' ? 'kn-IN' :
+                    currentLanguage === 'hi' ? 'hi-IN' :
+                    'en-IN';
+
+                recognition.interimResults = false;
+                recognition.maxAlternatives = 1;
+
+                recognition.onstart = () => {
+                    micButton.style.backgroundColor = '#dc2626';
+                    userInput.placeholder = 'Listening...';
+                };
+                recognition.onresult = (event) => {
+                    const transcript = event.results[0][0].transcript;
+                    userInput.value = transcript;
+                    handleSendMessage();
+                };
+                recognition.onend = () => {
+                    micButton.style.backgroundColor = '#3B82F6';
+                    userInput.placeholder = placeholders[currentLanguage];
+                };
+                recognition.onerror = (event) => {
+                    console.error('Speech recognition error', event.error);
+                    showAlert("Speech Recognition Error", "There was an error recognizing your speech. Please try again.");
+                };
+                recognition.start();
+            });
+
+            // --- Image Modal ---
+            modalCloseButton.addEventListener('click', () => {
+                imageModal.classList.add('hidden');
+            });
+
+            modalUploadButton.addEventListener('click', () => {
+                const file = modalImageInput.files[0];
+                if (!file) {
+                    showAlert("No Image Selected", "Please select an image to upload.");
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const base64Image = e.target.result;
+                    addMessage(base64Image, 'user', true);
+                    imageModal.classList.add('hidden');
+                    const imagePrompt = "Please analyze this image and provide a diagnosis and solution for any pests or diseases. Be specific. **(STRICTLY RESPOND IN ENGLISH)**";
+                    callGeminiAPI(imagePrompt, base64Image);
+                };
+                reader.readAsDataURL(file);
+            });
+
+            // Set up initial welcome message timestamp
+            const initialWelcomeMessage = document.querySelector('#chat-container .ai-message');
+            const timestamp = document.createElement('span');
+            timestamp.classList.add('message-timestamp');
+            timestamp.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            if (initialWelcomeMessage) initialWelcomeMessage.appendChild(timestamp);
+        });
+    </script>
+</body>
+</html>

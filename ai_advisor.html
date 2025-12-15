@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Krishi Mitra – AI Crop Advisor</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+    /* KRISHI MITRA THEME COLORS */
+    :root {
+      --primary-color: #4caf50; /* Green */
+      --secondary-color: #388e3c; /* Darker Green */
+      --background-url: url('https://images.unsplash.com/photo-1625246333195-78d9c38ad449') center/cover;
+      --text-dark: #333;
+    }
+
+    /* GLOBAL STYLES */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    body {
+      background: var(--background-url);
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+    }
+
+    /* Overlay for better readability */
+    body::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: rgba(0,0,0,0.5);
+        z-index: 1;
+    }
+
+    /* CARD STYLING */
+    .card {
+      background: white;
+      padding: 40px; /* Increased padding for better look */
+      border-radius: 12px;
+      width: 100%;
+      max-width: 420px; /* Slightly wider */
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      z-index: 2; /* Bring card above overlay */
+    }
+
+    /* HEADER/LOGO STYLING */
+    .logo-area {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+        align-items: center;
+        font-weight: 700;
+        font-size: 1.8rem;
+        color: var(--primary-color);
+        margin-bottom: 5px;
+    }
+
+    .logo-area span { color: var(--secondary-color); }
+    .logo-area i { font-size: 1.5rem; }
+
+    h2 {
+      text-align: center;
+      color: var(--text-dark);
+      margin-bottom: 25px;
+      font-size: 1.4rem;
+    }
+
+    h3 {
+      font-size: 1.0rem;
+      font-weight: 600;
+      color: var(--secondary-color);
+      margin-top: 20px;
+      margin-bottom: 10px;
+      border-left: 3px solid var(--primary-color);
+      padding-left: 10px;
+    }
+
+    /* INPUT STYLING */
+    input {
+      width: 100%;
+      padding: 10px 15px; /* Better padding */
+      margin-bottom: 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      transition: border-color 0.3s;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: var(--primary-color);
+      box-shadow: 0 0 5px rgba(76, 175, 80, 0.5);
+    }
+
+    /* BUTTON STYLING */
+    button {
+      width: 100%;
+      padding: 12px; /* Bigger button */
+      background: var(--primary-color);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-top: 5px;
+      font-weight: 600;
+      font-size: 1rem;
+      transition: background 0.3s;
+    }
+
+    button:hover {
+      background: var(--secondary-color);
+    }
+
+    /* SPECIFIC BUTTON COLOR */
+    #weatherInfo {
+        margin-top: 10px;
+        margin-bottom: 15px;
+        padding: 8px;
+        background: #e9f5e9;
+        border-radius: 4px;
+        font-size: 0.9rem;
+        color: var(--secondary-color);
+        text-align: center;
+    }
+    
+    /* OUTPUT STYLING */
+    .output {
+      margin-top: 20px;
+      background: #e9f5e9; /* Light green background */
+      padding: 15px;
+      border-radius: 8px;
+      border: 1px solid var(--primary-color);
+      line-height: 1.6;
+      color: var(--text-dark);
+    }
+    .output b {
+        color: var(--secondary-color);
+    }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <div class="logo-area">
+      <i class="fa-solid fa-seedling"></i>
+      <span>Krishi Mitra</span>
+  </div>
+  <h2>AI Crop Advisor</h2>
+
+  <h3><i class="fa-solid fa-flask"></i> Soil Details (N-P-K)</h3>
+  <input type="number" id="N" placeholder="Nitrogen (N) e.g. 90">
+  <input type="number" id="P" placeholder="Phosphorus (P) e.g. 40">
+  <input type="number" id="K" placeholder="Potassium (K) e.g. 40">
+
+  <h3><i class="fa-solid fa-cloud-sun"></i> Current Weather</h3>
+  <button onclick="fetchWeather()">Auto Fetch Current Weather</button>
+  <p id="weatherInfo">Weather data will appear here.</p>
+
+  <h3><i class="fa-solid fa-robot"></i> Get Recommendation</h3>
+  <button onclick="getRecommendation()">Get AI Crop Recommendation</button>
+
+  <div class="output" id="result">
+    Results will display crop recommendation and yield prediction.
+  </div>
+</div>
+
+<script>
+/* ================= CONFIG ================= */
+const BACKEND_API = "http://127.0.0.1:8000";
+const OPENWEATHER_API_KEY = "3081b138babb030c92442a664ca92ba4";
+/* ========================================= */
+
+let weather = {};
+
+/* -------- FETCH WEATHER FROM OPENWEATHER -------- */
+function fetchWeather() {
+  // Update button text while loading
+  const weatherButton = document.querySelector('button[onclick="fetchWeather()"]');
+  weatherButton.disabled = true;
+  weatherButton.innerText = "Fetching Location...";
+  
+  navigator.geolocation.getCurrentPosition(async (pos) => {
+    const lat = pos.coords.latitude;
+    const lon = pos.coords.longitude;
+    weatherButton.innerText = "Fetching Weather Data...";
+
+    const url =
+      `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${OPENWEATHER_API_KEY}&units=metric`;
+
+    try {
+        const res = await fetch(url);
+        const data = await res.json();
+    
+        weather = {
+          temperature: data.main.temp,
+          humidity: data.main.humidity,
+          // OpenWeather sometimes uses "rain" and sometimes not, and structure can be complex.
+          // Fallback to 0 if data.rain is undefined or "1h" is missing.
+          rainfall: data.rain ? (data.rain["1h"] || 0) : 0
+        };
+    
+        document.getElementById("weatherInfo").innerHTML =
+          `✅ Data Fetched: <b>${weather.temperature.toFixed(1)}°C</b> | <b>${weather.humidity}%</b> | <b>${weather.rainfall.toFixed(2)} mm</b>`;
+    } catch (e) {
+        document.getElementById("weatherInfo").innerText = "❌ Error fetching weather. Try again.";
+    } finally {
+        weatherButton.disabled = false;
+        weatherButton.innerText = "Auto Fetch Current Weather";
+    }
+  },
+  () => {
+    document.getElementById("weatherInfo").innerText = "❌ Location permission is required to fetch weather.";
+    weatherButton.disabled = false;
+    weatherButton.innerText = "Auto Fetch Current Weather";
+  });
+}
+
+/* -------- CALL BACKEND AI APIs -------- */
+async function getRecommendation() {
+  const N = Number(document.getElementById("N").value);
+  const P = Number(document.getElementById("P").value);
+  const K = Number(document.getElementById("K").value);
+
+  const resultDiv = document.getElementById("result");
+  const recommendButton = document.querySelector('button[onclick="getRecommendation()"]');
+
+  if (!N || !P || !K) {
+    alert("Please enter N, P, K values");
+    return;
+  }
+
+  if (!weather.temperature) {
+    alert("Please fetch weather first");
+    return;
+  }
+
+  recommendButton.disabled = true;
+  recommendButton.innerText = "Processing...";
+  resultDiv.innerHTML = "Calculating crop recommendation and yield prediction...";
+
+  const payload = {
+    N: N,
+    P: P,
+    K: K,
+    temperature: weather.temperature,
+    humidity: weather.humidity,
+    rainfall: weather.rainfall
+  };
+
+  try {
+      /* --- Crop Recommendation --- */
+      const cropRes = await fetch(BACKEND_API + "/recommend-crop", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const cropData = await cropRes.json();
+    
+      /* --- Yield Prediction --- */
+      const yieldRes = await fetch(BACKEND_API + "/predict-yield", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const yieldData = await yieldRes.json();
+
+      document.getElementById("result").innerHTML =
+        `✅ **Recommendation Complete** <br>
+         <b>Recommended Crop:</b> ${cropData.recommended_crop}<br>
+         <b>Expected Yield:</b> ${yieldData.expected_yield} kg/ha`;
+         
+  } catch (error) {
+    console.error("Backend API Error:", error);
+    resultDiv.innerHTML = "❌ An error occurred while contacting the AI backend.";
+  } finally {
+      recommendButton.disabled = false;
+      recommendButton.innerText = "Get AI Crop Recommendation";
+  }
+}
+</script>
+
+</body>
+</html>

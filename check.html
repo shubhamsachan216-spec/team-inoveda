@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="ml">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Irrigation Dashboard</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+      background:#f5f7fb;
+    }
+    #map {
+      height: 60vh;
+      width: 100%;
+      border-radius: 12px;
+    }
+    .card {
+      background:white;
+      border-radius:12px;
+      padding:1.25rem;
+      box-shadow:0 8px 20px rgba(0,0,0,0.08);
+    }
+    .legend-item {
+      display:flex;
+      align-items:center;
+      margin-bottom:6px;
+      font-size:0.85rem;
+    }
+    .color-box {
+      width:16px;
+      height:16px;
+      border-radius:4px;
+      margin-right:6px;
+    }
+    .lang-btn-active {
+      background:#2563eb;
+      color:white;
+    }
+    .lang-btn {
+      border-radius:999px;
+      padding:4px 10px;
+      font-size:0.8rem;
+      border:1px solid #d1d5db;
+      background:white;
+      cursor:pointer;
+    }
+    select, input {
+      border-radius:999px;
+      border:1px solid #d1d5db;
+      padding:4px 10px;
+      font-size:0.9rem;
+      outline:none;
+    }
+  </style>
+</head>
+<body class="p-4 md:p-6">
+
+  <div class="max-w-6xl mx-auto space-y-3">
+    <!-- Header + Language Toggle -->
+    <div class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+      <div>
+        <h1 id="title-main" class="text-3xl font-extrabold text-gray-800">സ്മാർട്ട് സേചന ഡാഷ്ബോർഡ്</h1>
+        <p id="subtitle" class="text-gray-500 text-sm mt-1">
+          ജിപിഎസ് + ഉപഗ്രഹ ചിത്രം ഉപയോഗിച്ച് നിങ്ങളുടെ വയലിലെ ജലസ്ഥിതി കണ്ടുപിടിക്കാൻ.
+        </p>
+      </div>
+      <div class="flex gap-2 justify-end">
+        <button id="btn-ml" class="lang-btn lang-btn-active">മലയാളം</button>
+        <button id="btn-en" class="lang-btn">English</button>
+      </div>
+    </div>
+
+    <!-- Crop selection -->
+    <div class="card border-l-4 border-green-600">
+      <label id="label-crop" class="font-semibold block mb-2">കൃഷി തിരഞ്ഞെടുക്കുക:</label>
+      <select id="crop-select" class="w-full">
+        <option value="paddy">🌾 നെല്ല് (Paddy)</option>
+        <option value="banana">🍌 വാഴ (Banana)</option>
+        <option value="coconut">🥥 തേങ്ങ (Coconut)</option>
+        <option value="vegetables">🥬 പച്ചക്കറി (Vegetables)</option>
+        <option value="maize">🌽 മൈസ് (Maize)</option>
+        <option value="rubber">🌳 റബ്ബർ (Rubber)</option>
+        <option value="tea">🍃 Tea</option>
+        <option value="coffee">☕ Coffee</option>
+        <option value="sugarcane">🍬 Sugarcane</option>
+        <option value="cotton">🧵 Cotton</option>
+        <option value="pulses">🌱 Pulses</option>
+        <option value="fruits">🍎 Fruits</option>
+        <option value="other">➕ Other Crop</option>
+      </select>
+      <input id="other-crop-input" class="w-full mt-2 hidden"
+             placeholder="Enter crop name / വിളയുടെ പേര്">
+    </div>
+
+    <!-- Map -->
+    <div id="map"></div>
+
+    <!-- Panels -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+
+      <!-- Irrigation Recommendation -->
+      <div id="rec-card" class="card md:col-span-2 border-l-4 border-blue-500">
+        <div id="loading" class="text-center py-4">
+          <div class="animate-spin h-8 w-8 border-b-2 border-blue-500 rounded-full mx-auto mb-2"></div>
+          <p id="loading-text" class="text-gray-600 text-sm">
+            ജിപിഎസ് സ്ഥാനം & ഉപഗ്രഹ ഡാറ്റ എടുത്തുകൊണ്ടിരിക്കുന്നു...
+          </p>
+        </div>
+
+        <div id="output" class="hidden">
+          <h2 class="text-xl font-bold text-gray-800">
+            <span id="label-irrigation-status">വയലിന്റെ സ്ഥിതി:</span>
+            <span id="status" class="font-extrabold"></span>
+          </h2>
+
+          <p id="summary" class="mt-2 text-gray-800 font-semibold"></p>
+
+          <div class="mt-3 text-xs sm:text-sm text-gray-700 space-y-1">
+            <p><span id="label-scene-date" class="font-semibold">ഉപഗ്രഹ ചിത്രം തീയതി:</span>
+              <span id="scene-date"></span></p>
+            <p><span id="label-cloud" class="font-semibold">മേഘാവരണം:</span>
+              <span id="cloud-cover"></span></p>
+            <p><span id="label-rain-today" class="font-semibold">ഇന്നത്തെ മഴ സാധ്യത:</span>
+              <span id="rain-today"></span></p>
+            <p><span id="label-rain-tmr" class="font-semibold">നാളെയുടെ മഴ സാധ്യത:</span>
+              <span id="rain-tmr"></span></p>
+          </div>
+
+          <div id="actions" class="mt-4 text-sm text-gray-700 space-y-3"></div>
+        </div>
+      </div>
+
+      <!-- Legends -->
+      <div class="space-y-3">
+
+        <!-- Soil Moisture Legend -->
+        <div class="card border-l-4 border-blue-500">
+          <h3 class="text-sm font-bold text-gray-800 mb-2">മണ്ണിലെ ഈർപ്പം (Soil Moisture)</h3>
+          <div class="legend-item">
+            <div class="color-box" style="background:#0000FF;"></div>
+            <span>ഉയർന്ന ഈർപ്പം</span>
+          </div>
+          <div class="legend-item">
+            <div class="color-box" style="background:#00FF00;"></div>
+            <span>മിതമായ ഈർപ്പം</span>
+          </div>
+          <div class="legend-item">
+            <div class="color-box" style="background:#FFFF00;"></div>
+            <span>കുറഞ്ഞ ഈർപ്പം</span>
+          </div>
+          <div class="legend-item">
+            <div class="color-box" style="background:#FF0000;"></div>
+            <span>വറക്കം</span>
+          </div>
+        </div>
+
+        <!-- Heatmap Legend -->
+        <div class="card border-l-4 border-purple-500">
+          <h3 class="text-sm font-bold text-gray-800 mb-2">വയലിന്റെ ജലാരോഗ്യം (Heatmap)</h3>
+          <div class="legend-item"><div class="color-box" style="background:#ff0000;"></div><span>വളരെ വരണ്ട</span></div>
+          <div class="legend-item"><div class="color-box" style="background:#ffff00;"></div><span>വരണ്ടു തുടങ്ങി</span></div>
+          <div class="legend-item"><div class="color-box" style="background:#00ff00;"></div><span>ശരാശരി ജലം</span></div>
+          <div class="legend-item"><div class="color-box" style="background:#0000ff;"></div><span>മുന്നാണി ജലം</span></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Heatmap Plugin -->
+  <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+
+  <script>
+    // Agro / OpenWeather Agro API key (you already have this)
+    const AGRO_API_KEY = "e718f637bf69a78853efce595ef92694";
+
+    // Normal OpenWeather API key (replace this!)
+    const WEATHER_API_KEY = "YOUR_OPENWEATHER_API_KEY_HERE";
+
+    let currentLang = "ml";
+    let map, fieldPolygonLayer, smiLayer, irrigationHeatLayer;
+    let baseLayers = {};
+    let overlayLayers = {};
+
+    // Stored state for re-render on crop/lang change
+    const state = {
+      polyCoords: null,
+      stats: null,
+      ndviMean: null,
+      weather: null,
+      cropKey: "paddy",
+      finalMm: 0,
+      liters: 0
+    };
+
+    // Crop water requirement (mm) baseline
+    const cropWaterTable = {
+      paddy: 30,
+      banana: 40,
+      coconut: 20,
+      vegetables: 25,
+      maize: 22,
+      rubber: 24,
+      tea: 20,
+      coffee: 18,
+      sugarcane: 45,
+      cotton: 30,
+      pulses: 20,
+      fruits: 25,
+      other: 25
+    };
+
+    const i18n = {
+      ml: {
+        cropLabel: "കൃഷി തിരഞ്ഞെടുക്കുക:",
+        loading: "ജിപിഎസ് സ്ഥാനം & ഉപഗ്രഹ ഡാറ്റ എടുത്തുകൊണ്ടിരിക്കുന്നു...",
+        irrStatus: "വയലിന്റെ സ്ഥിതി:",
+        sceneDate: "ഉപഗ്രഹ ചിത്രം തീയതി:",
+        cloud: "മേഘാവരണം:",
+        rainToday: "ഇന്നത്തെ മഴ സാധ്യത:",
+        rainTomorrow: "നാളെയുടെ മഴ സാധ്യത:",
+        status_good: "നല്ല നില",
+        status_moderate: "ശ്രദ്ധ ആവശ്യം",
+        status_dry: "വളരെ വരണ്ട",
+        summary_good: "മണ്ണിൽ ആവശ്യമായ ഈർപ്പം ഉണ്ട്. ഇന്ന് വെള്ളം ആവശ്യമില്ല.",
+        summary_moderate: "മഴ സാധ്യതയുള്ളതിനാൽ കുറച്ച് വെള്ളം മാത്രം മതിയാകും.",
+        summary_dry: "മണ്ണ് വരണ്ടിരിക്കുകയാണ്. ആവശ്യമായ അളവിൽ വെള്ളം നൽകുക.",
+        waterNeeded: liters => `💧 ഏകദേശം ${liters.toLocaleString()} ലിറ്റർ വെള്ളം ആവശ്യമാണ്.`,
+        waterExtra: "മഴയും മണ്ണിലെ ഈർപ്പവും കണക്കിലെടുത്താണ് ഈ നിർദേശം."
+      },
+      en: {
+        cropLabel: "Select Crop:",
+        loading: "Fetching GPS & satellite data...",
+        irrStatus: "Field Status:",
+        sceneDate: "Satellite Image Date:",
+        cloud: "Cloud Cover:",
+        rainToday: "Rain today:",
+        rainTomorrow: "Rain tomorrow:",
+        status_good: "Healthy",
+        status_moderate: "Moderate",
+        status_dry: "Dry",
+        summary_good: "Soil has enough moisture. No irrigation needed today.",
+        summary_moderate: "Some rain expected, so apply reduced water.",
+        summary_dry: "Field is dry. Irrigation is required.",
+        waterNeeded: liters => `💧 About ${liters.toLocaleString()} liters of water required.`,
+        waterExtra: "This suggestion considers both rain forecast and soil moisture."
+      }
+    };
+
+    function applyLanguage() {
+      const t = i18n[currentLang];
+      document.getElementById("label-crop").textContent = t.cropLabel;
+      document.getElementById("loading-text").textContent = t.loading;
+      document.getElementById("label-irrigation-status").textContent = t.irrStatus + " ";
+      document.getElementById("label-scene-date").textContent = t.sceneDate + " ";
+      document.getElementById("label-cloud").textContent = t.cloud + " ";
+      document.getElementById("label-rain-today").textContent = t.rainToday + " ";
+      document.getElementById("label-rain-tmr").textContent = t.rainTomorrow + " ";
+    }
+
+    function getGPS() {
+      return new Promise(resolve => {
+        if (!navigator.geolocation) {
+          return resolve({ lat: 10.1, lon: 76.3 }); // Kerala-ish fallback
+        }
+        navigator.geolocation.getCurrentPosition(
+          pos => resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
+          () => resolve({ lat: 10.1, lon: 76.3 }),
+          { enableHighAccuracy: true, timeout: 8000 }
+        );
+      });
+    }
+
+    function makePolygon(lat, lon, meters) {
+      const dLat = meters / 111000;
+      const dLon = meters / (111000 * Math.cos(lat * Math.PI / 180));
+      return [
+        [lat + dLat, lon - dLon],
+        [lat + dLat, lon + dLon],
+        [lat - dLat, lon + dLon],
+        [lat - dLat, lon - dLon],
+        [lat + dLat, lon - dLon]
+      ];
+    }
+
+    async function registerPolygon(lat, lon) {
+      try {
+        const coordsLatLon = makePolygon(lat, lon, 120);
+        const coordsGeoJSON = coordsLatLon.map(([la, lo]) => [lo, la]);
+
+        const body = {
+          name: "Field_" + Date.now(),
+          geo_json: {
+            type: "Feature",
+            properties: {},
+            geometry: {
+              type: "Polygon",
+              coordinates: [coordsGeoJSON]
+            }
+          }
+        };
+
+        const res = await fetch(
+          `https://api.agromonitoring.com/agro/1.0/polygons?appid=${AGRO_API_KEY}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body)
+          }
+        );
+        if (!res.ok) return null;
+        const json = await res.json();
+        return { polyId: json.id, coordsLatLon };
+      } catch {
+        return null;
+      }
+    }
+
+    async function fetchLatestScene(polyId) {
+      try {
+        const now = Math.floor(Date.now() / 1000);
+        const monthAgo = now - 30 * 24 * 3600;
+        const res = await fetch(
+          `https://api.agromonitoring.com/agro/1.0/image/search?polyid=${polyId}&start=${monthAgo}&end=${now}&appid=${AGRO_API_KEY}`
+        );
+        if (!res.ok) return null;
+        const arr = await res.json();
+        if (!arr.length) return null;
+        return arr[arr.length - 1];
+      } catch {
+        return null;
+      }
+    }
+
+    async function fetchStats(polyId, dt) {
+      try {
+        const res = await fetch(
+          `https://api.agromonitoring.com/agro/1.0/stats?polyid=${polyId}&dt=${dt}&appid=${AGRO_API_KEY}`
+        );
+        if (!res.ok) return null;
+        return res.json();
+      } catch {
+        return null;
+      }
+    }
+
+    async function fetchWeather(lat, lon) {
+      try {
+        if (!WEATHER_API_KEY || WEATHER_API_KEY.includes("YOUR_OPENWEATHER")) {
+          // Mock if no real key
+          return {
+            todayRain: 0,
+            tomorrowRain: 5,
+            desc: "Mock light rain tomorrow"
+          };
+        }
+
+        const res = await fetch(
+          `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&units=metric&appid=${WEATHER_API_KEY}`
+        );
+        if (!res.ok) {
+          return { todayRain: 0, tomorrowRain: 0, desc: "No data" };
+        }
+
+        const data = await res.json();
+        const now = Date.now() / 1000;
+        let todayRain = 0, tomorrowRain = 0;
+
+        for (const item of data.list) {
+          const dt = item.dt;
+          const diffH = (dt - now) / 3600;
+          const rain3h = item.rain && item.rain["3h"] ? item.rain["3h"] : 0;
+
+          if (diffH >= 0 && diffH < 24) todayRain += rain3h;
+          else if (diffH >= 24 && diffH < 48) tomorrowRain += rain3h;
+        }
+        const desc = data.list[0]?.weather?.[0]?.description || "No data";
+        return { todayRain, tomorrowRain, desc };
+      } catch {
+        return { todayRain: 0, tomorrowRain: 0, desc: "No data" };
+      }
+    }
+
+    function computeIrrigationMm(cropKey, weather) {
+      const base = cropWaterTable[cropKey] ?? cropWaterTable.other;
+      const rainTotal = (weather?.todayRain || 0) + (weather?.tomorrowRain || 0);
+      let reduction = rainTotal * 2; // mm reduction factor
+      let finalMm = base - reduction;
+      if (finalMm < 0) finalMm = 0;
+      return Math.round(finalMm);
+    }
+
+    // Point-in-polygon for [lat, lon]
+    function pointInPolygon(point, polygon) {
+      const y = point[0];
+      const x = point[1];
+      let inside = false;
+
+      for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+        const yi = polygon[i][0], xi = polygon[i][1];
+        const yj = polygon[j][0], xj = polygon[j][1];
+
+        const intersect = ((yi > y) !== (yj > y)) &&
+          (x < ((xj - xi) * (y - yi) / (yj - yi) + xi));
+        if (intersect) inside = !inside;
+      }
+      return inside;
+    }
+
+    // Heatmap points strictly inside polygon
+    function generateHeatPoints(poly, moisture) {
+      const lats = poly.map(p => p[0]);
+      const lons = poly.map(p => p[1]);
+      const minLat = Math.min(...lats);
+      const maxLat = Math.max(...lats);
+      const minLon = Math.min(...lons);
+      const maxLon = Math.max(...lons);
+
+      const rows = 18;
+      const cols = 18;
+      const latStep = (maxLat - minLat) / rows;
+      const lonStep = (maxLon - minLon) / cols;
+
+      const points = [];
+      for (let i = 0; i <= rows; i++) {
+        const lat = minLat + i * latStep;
+        for (let j = 0; j <= cols; j++) {
+          const lon = minLon + j * lonStep;
+          if (pointInPolygon([lat, lon], poly)) {
+            // Add some slight variation
+            const value = Math.min(1, Math.max(0, moisture + (Math.random() - 0.5) * 0.2));
+            points.push([lat, lon, value]);
+          }
+        }
+      }
+      return points;
+    }
+
+    function renderIrrigationUI() {
+      const t = i18n[currentLang];
+      const { stats, weather, finalMm } = state;
+
+      const sceneDate = stats && stats.dt
+        ? new Date(stats.dt * 1000).toISOString().slice(0, 10)
+        : "-";
+
+      const cloud = stats && stats.clouds && typeof stats.clouds.mean === "number"
+        ? stats.clouds.mean.toFixed(1) + "%"
+        : "-";
+
+      const todayRain = weather ? weather.todayRain.toFixed(1) + " mm" : "-";
+      const tomorrowRain = weather ? weather.tomorrowRain.toFixed(1) + " mm" : "-";
+
+      document.getElementById("scene-date").textContent = sceneDate;
+      document.getElementById("cloud-cover").textContent = cloud;
+      document.getElementById("rain-today").textContent = todayRain;
+      document.getElementById("rain-tmr").textContent = tomorrowRain;
+
+      const area = 120 * 120; // m²
+      const liters = finalMm * area;
+      state.liters = liters;
+
+      let statusText, summaryText;
+      if (finalMm === 0) {
+        statusText = t.status_good;
+        summaryText = t.summary_good;
+      } else {
+        const baseMm = cropWaterTable[state.cropKey] ?? cropWaterTable.other;
+        if (finalMm < baseMm) {
+          statusText = t.status_moderate;
+          summaryText = t.summary_moderate;
+        } else {
+          statusText = t.status_dry;
+          summaryText = t.summary_dry;
+        }
+      }
+
+      document.getElementById("status").textContent = statusText;
+      document.getElementById("summary").textContent = summaryText;
+
+      document.getElementById("actions").innerHTML = `
+        <div class="p-3 bg-blue-50 rounded">
+          ${t.waterNeeded(liters)}
+        </div>
+        <div class="p-3 bg-gray-50 rounded">
+          ${t.waterExtra}
+        </div>
+      `;
+    }
+
+    async function init() {
+      applyLanguage();
+
+      const gps = await getGPS();
+
+      map = L.map("map").setView([gps.lat, gps.lon], 16);
+
+      const normal = L.tileLayer(
+        "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+        { maxZoom: 19 }
+      ).addTo(map);
+
+      const satellite = L.tileLayer(
+        "https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}",
+        { maxZoom: 20, subdomains:["mt0","mt1","mt2","mt3"] }
+      );
+
+      baseLayers = {
+        [currentLang === "ml" ? "സാധാരണ മാപ്പ്" : "Normal Map"]: normal,
+        [currentLang === "ml" ? "സാറ്റലൈറ്റ്" : "Satellite"]: satellite
+      };
+
+      const polyInfo = await registerPolygon(gps.lat, gps.lon);
+      const coords = polyInfo?.coordsLatLon || makePolygon(gps.lat, gps.lon, 120);
+      state.polyCoords = coords;
+
+      fieldPolygonLayer = L.polygon(coords, {
+        color: "#22c55e",
+        fillColor: "#4ade80",
+        fillOpacity: 0.12,
+        weight: 2
+      }).addTo(map);
+      overlayLayers[currentLang === "ml" ? "വയൽ പരിധി" : "Field Boundary"] = fieldPolygonLayer;
+
+      map.fitBounds(fieldPolygonLayer.getBounds(), { maxZoom: 18 });
+
+      let stats = null;
+      let ndviMean = 0.5;
+      if (polyInfo && polyInfo.polyId) {
+        const scene = await fetchLatestScene(polyInfo.polyId);
+        if (scene && scene.dt) {
+          stats = await fetchStats(polyInfo.polyId, scene.dt);
+        }
+
+        if (stats && stats.ndvi && typeof stats.ndvi.mean === "number") {
+          ndviMean = stats.ndvi.mean;
+        }
+
+        // Soil Moisture Tile (SMI)
+        smiLayer = L.tileLayer(
+          `https://api.agromonitoring.com/tile/1.0/smi/{z}/{x}/{y}?polyid=${polyInfo.polyId}&appid=${AGRO_API_KEY}`,
+          { opacity: 0.75 }
+        ).addTo(map);
+        overlayLayers[currentLang === "ml" ? "മണ്ണിലെ ഈർപ്പം" : "Soil Moisture"] = smiLayer;
+      }
+
+      if (!stats) {
+        stats = {
+          dt: Date.now() / 1000,
+          clouds: { mean: 20 },
+          ndvi: { mean: ndviMean }
+        };
+      }
+
+      const weather = await fetchWeather(gps.lat, gps.lon);
+
+      state.stats = stats;
+      state.ndviMean = ndviMean;
+      state.weather = weather;
+
+      // Irrigation in mm based on crop + weather
+      const cropKey = document.getElementById("crop-select").value;
+      state.cropKey = cropKey;
+      state.finalMm = computeIrrigationMm(cropKey, weather);
+
+      // Heatmap strictly inside polygon
+      const moisture = ndviMean; // use NDVI as proxy
+      const heatData = generateHeatPoints(coords, moisture);
+      irrigationHeatLayer = L.heatLayer(heatData, {
+        radius: 25,
+        blur: 18,
+        gradient: {
+          0.0: "#ff0000",
+          0.4: "#ffff00",
+          0.7: "#00ff00",
+          1.0: "#0000ff"
+        }
+      }).addTo(map);
+      overlayLayers[currentLang === "ml" ? "ജലാരോഗ്യം (Heatmap)" : "Irrigation Heatmap"] = irrigationHeatLayer;
+
+      L.control.layers(baseLayers, overlayLayers).addTo(map);
+
+      document.getElementById("loading").classList.add("hidden");
+      document.getElementById("output").classList.remove("hidden");
+
+      renderIrrigationUI();
+    }
+
+    // Language button events
+    document.getElementById("btn-ml").addEventListener("click", () => {
+      currentLang = "ml";
+      document.getElementById("btn-ml").classList.add("lang-btn-active");
+      document.getElementById("btn-en").classList.remove("lang-btn-active");
+      applyLanguage();
+      renderIrrigationUI();
+    });
+
+    document.getElementById("btn-en").addEventListener("click", () => {
+      currentLang = "en";
+      document.getElementById("btn-en").classList.add("lang-btn-active");
+      document.getElementById("btn-ml").classList.remove("lang-btn-active");
+      applyLanguage();
+      renderIrrigationUI();
+    });
+
+    // Crop change
+    document.getElementById("crop-select").addEventListener("change", (e) => {
+      const val = e.target.value;
+      state.cropKey = val;
+
+      const otherInput = document.getElementById("other-crop-input");
+      if (val === "other") {
+        otherInput.classList.remove("hidden");
+      } else {
+        otherInput.classList.add("hidden");
+      }
+
+      if (state.weather) {
+        state.finalMm = computeIrrigationMm(val, state.weather);
+        renderIrrigationUI();
+      }
+    });
+
+    init();
+  </script>
+</body>
+</html>

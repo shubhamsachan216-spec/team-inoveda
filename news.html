@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <title>Krishi News</title>
+
+    <style>
+        /* Custom Styles for a clean look */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f3f5; 
+        }
+        
+        /* Professional Container Management */
+        .main-content-container {
+            max-width: 1200px; 
+            margin: 0 auto; 
+            padding: 0 15px; 
+        }
+
+        /* Navbar Styling */
+        .navbar-fixed {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); 
+        }
+
+        .news-card {
+            border-radius: 12px; 
+            overflow: hidden;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08); 
+            transition: transform 0.2s, box-shadow 0.2s;
+            height: 100%; 
+            display: flex;
+            flex-direction: column;
+        }
+
+        .news-card:hover {
+            transform: translateY(-5px); 
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .card-img-top {
+            object-fit: cover;
+            height: 200px;
+            width: 100%;
+            border-bottom: 3px solid #198754; 
+        }
+
+        .card-body {
+            flex-grow: 1; 
+            display: flex;
+            flex-direction: column;
+            padding: 18px; 
+        }
+        
+        .card-title {
+            font-weight: 700;
+            font-size: 1.15rem;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        
+        /* Container for description text with fixed height and overflow */
+        .card-text-container {
+            height: 75px; 
+            overflow-y: auto; 
+            margin-bottom: 15px;
+            padding-right: 5px; 
+        }
+
+        .card-text {
+            font-size: 0.9rem;
+            color: #555;
+            margin-bottom: 0; 
+        }
+
+        .read-more {
+            margin-top: auto; 
+            font-weight: 600;
+            padding: 8px 15px;
+            border-radius: 8px;
+        }
+
+        #newsType {
+            text-align: center;
+            font-size: 2rem; 
+            font-weight: 800;
+            color: #198754; 
+            margin-top: 30px; 
+            margin-bottom: 25px; 
+        }
+
+        /* New Span for Language Code */
+        .lang-code-text {
+            display: none; /* Hide code by default on desktop */
+        }
+
+        /* --- RESPONSIVENESS (Mobile Adjustments) --- */
+        @media (max-width: 576px) {
+            /* 1. Language Button Shrink */
+            .lang-text {
+                display: none; /* Hide the full "Language: English" text */
+            }
+            .lang-code-text {
+                display: inline; /* Show the short code (e.g., "EN") */
+            }
+            #languageDropdown {
+                padding: 6px 10px; /* Make the button physically smaller */
+                font-size: 0.85rem;
+            }
+
+            /* 2. Card and Text Adjustments */
+            .card-img-top {
+                height: 150px; 
+            }
+            .card-body {
+                padding: 12px;
+            }
+            .card-title {
+                font-size: 1rem;
+            }
+            .card-text-container {
+                height: 60px; /* Smaller height for text scroll area */
+            }
+            .card-text {
+                font-size: 0.85rem;
+            }
+            #newsType {
+                font-size: 1.5rem;
+                margin-top: 20px;
+                margin-bottom: 15px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container-fluid p-0">
+
+        <nav class="navbar navbar-dark bg-dark sticky-top navbar-fixed">
+            <div class="main-content-container container-fluid">
+                <a class="navbar-brand text-warning fw-bold fs-4" href="#">Krishi<span class="text-success">News</span></a>
+                
+                <div class="dropdown">
+                    <button class="btn btn-success dropdown-toggle fw-bold" type="button" id="languageDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        <span class="lang-text">Language: </span><span id="currentLangName">English</span>
+                        <span class="lang-code-text" id="currentLangCode">EN</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end" aria-labelledby="languageDropdown">
+                        <li><a class="dropdown-item lang-select" href="#" data-lang="en" data-name="English" data-code="EN">English (EN)</a></li>
+                        <li><a class="dropdown-item lang-select" href="#" data-lang="hi" data-name="Hindi" data-code="HI">हिन्दी (Hindi - HI)</a></li>
+                        <li><a class="dropdown-item lang-select" href="#" data-lang="ml" data-name="Malayalam" data-code="ML">മലയാളം (Malayalam - ML)</a></li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+
+        <div class="main-content-container">
+
+            <div class="row">
+                <div id="newsType" class="col-12">Farming News (India - English)</div>
+            </div>
+            
+            <div class="row g-4" id="newsdetails"> 
+                </div>
+            
+        </div> <div class="mt-5 bg-dark">
+            <div class="main-content-container">
+                <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+                    <div class="container-fluid m-0 p-0 justify-content-center">
+                        <h5 class="text-white py-3 mb-0">© 2025 Krishi<span class="text-warning">Mitra</span>
+                        </h5>
+                    </div>
+                </nav>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p"
+        crossorigin="anonymous"></script>
+
+    <script>
+        // API Configuration (using the provided key)
+        const API_KEY = 'pub_b9372a6727ad4a2b8ba2b992c7bfdb33';
+        const BASE_URL = 'https://newsdata.io/api/1/news';
+
+        // State and DOM Elements
+        let currentLanguage = 'en'; 
+        const languageNames = { 'en': 'English', 'hi': 'Hindi', 'ml': 'Malayalam' };
+
+        const newsdetails = document.getElementById('newsdetails');
+        const newsType = document.getElementById('newsType');
+        const languageDropdownBtn = document.getElementById('languageDropdown');
+        const currentLangNameEl = document.getElementById('currentLangName'); // Element for full name
+        const currentLangCodeEl = document.getElementById('currentLangCode'); // Element for code
+
+        // Function to build the API URL (Hardcoded for 'farming' and 'in' country)
+        const buildUrl = (lang) => {
+            return `${BASE_URL}?apikey=${API_KEY}&q=farming&language=${lang}&country=in`;
+        };
+
+        const defaultUrl = buildUrl(currentLanguage); 
+        const defaultType = `Farming News (India - ${languageNames[currentLanguage]})`;
+
+
+        // ------------------- Utility Functions -------------------
+
+        // Function to show a loading message/spinner
+        const showLoading = (message) => {
+            newsdetails.innerHTML = `<div class="col-12 text-center my-5">
+                <div class="spinner-border text-success" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2">${message}</p>
+            </div>`;
+        };
+
+        // Function to format and display news articles
+        const displayNews = (articles, type) => {
+            newsType.innerText = type;
+            if (!articles || articles.length === 0) {
+                newsdetails.innerHTML = `<div class="col-12 text-center my-5">
+                    <h5>No news found for ${type}.</h5>
+                    <p>The API may have no current results for this query in this language/country combination.</p>
+                </div>`;
+                return;
+            }
+
+            let newsHtml = '';
+            articles.forEach(article => {
+                // Ensure the article has a title, description, and link
+                if (!article.title || !article.description || !article.link) return;
+                
+                const imageUrl = article.image_url || 'https://placehold.co/600x400/198754/ffffff?text=Farming+News';
+                
+                const publishedDate = article.pubDate ? 
+                    new Date(article.pubDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 
+                    'Date N/A';
+
+                newsHtml += `
+                    <div class="col-6 col-md-6 col-lg-4 d-flex"> 
+                        <div class="card news-card w-100">
+                            <img src="${imageUrl}" class="card-img-top" alt="${article.title}" onerror="this.onerror=null; this.src='https://placehold.co/600x400/198754/ffffff?text=Farming+News';" />
+                            <div class="card-body">
+                                <h5 class="card-title">${article.title}</h5>
+                                <p class="card-text text-muted small">${article.source_id || 'Unknown Source'} | ${publishedDate}</p>
+                                
+                                <div class="card-text-container">
+                                    <p class="card-text">${article.description || 'Click read more for details.'}</p>
+                                </div>
+
+                                <a href="${article.link}" target="_blank" class="btn btn-success read-more">Read More</a>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            newsdetails.innerHTML = newsHtml;
+        };
+
+
+        // Function to fetch news from the API
+        const fetchNews = async (url, type) => {
+            showLoading(`Loading ${type}...`);
+
+            try {
+                // Implementing basic retry logic with exponential backoff (up to 3 retries)
+                for (let attempt = 0; attempt < 3; attempt++) {
+                    const response = await fetch(url);
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        
+                        if (data.status === 'success' && data.results) {
+                            displayNews(data.results, type);
+                            return; 
+                        } else {
+                            displayNews([], type);
+                            return;
+                        }
+                    } else if (response.status === 429) {
+                        // Rate limit exceeded, wait and retry
+                        const delay = Math.pow(2, attempt) * 1000;
+                        console.warn(`Rate limit hit (429). Retrying in ${delay / 1000}s...`); 
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                        continue; // Go to the next attempt
+                    } else {
+                        // Non-retryable error (e.g., 401, 404, 500)
+                        const errorData = await response.json().catch(() => ({ message: 'Unknown error structure' }));
+                        throw new Error(errorData.message || `API call failed with status: ${response.status}`);
+                    }
+                }
+                
+                // If all retries failed
+                throw new Error("Failed to fetch news after multiple retries due to rate limits.");
+
+
+            } catch (error) {
+                console.error('Fetch error:', error);
+                newsdetails.innerHTML = `<div class="col-12 text-center my-5">
+                    <h5 class="text-danger">Error fetching news:</h5>
+                    <p class="text-danger">${error.message}</p>
+                    <p>If you see a 429 error, please wait 60 seconds and refresh.</p>
+                </div>`;
+            }
+        };
+
+        // ------------------- Event Listeners -------------------
+        
+        // Language selection handler
+        document.querySelectorAll('.lang-select').forEach(item => {
+            item.addEventListener('click', (event) => {
+                event.preventDefault();
+                const newLang = event.target.getAttribute('data-lang');
+                const newName = event.target.getAttribute('data-name');
+                const newCode = event.target.getAttribute('data-code');
+                
+                if (newLang !== currentLanguage) {
+                    currentLanguage = newLang;
+                    
+                    // Update the visible text elements
+                    currentLangNameEl.textContent = newName;
+                    currentLangCodeEl.textContent = newCode;
+
+                    const newUrl = buildUrl(currentLanguage);
+                    fetchNews(newUrl, `Farming News (India - ${newName})`);
+                }
+            });
+        });
+
+        // Initial Load: Fetch Farming News in English (default)
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchNews(defaultUrl, defaultType);
+        });
+
+    </script>
+
+</body>
+
+</html>
